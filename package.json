@@ -1,0 +1,16 @@
+{
+  "name": "klirr",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Nonlinear loudspeaker simulator: harmonic, intermodulation and multitone distortion, maximum SPL and audible distortion from Klippel large-signal driver parameters.",
+  "scripts": {
+    "build": "python3 build.py",
+    "build:library": "python3 build_library.py",
+    "test": "node tests/test_engine.js && node tests/test_api.js && node tests/cmp_erin.js",
+    "test:browser": "python3 build.py && node tests/ui_test.js && node tests/editor_test.js && node tests/runtime_test.js && node tests/standalone_test.js",
+    "serve": "python3 -m http.server 8000 --directory dist"
+  },
+  "devDependencies": {
+    "playwright": "1.56.0"
+  }
+}

@@ -1,0 +1,68 @@
+# Runs on every push and pull request. On main it also publishes dist/ to GitHub Pages.
+name: Test and publish
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  engine:
+    name: Engine, library and Guide numbers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: library.json matches the extraction outputs
+        run: python3 build_library.py > /dev/null && git diff --exit-code library.json
+      - name: Engine validation, API smoke test, measured comparison
+        run: npm test
+
+  browser:
+    name: Page in a headless browser
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - name: Keep the screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: screenshots
+          path: shots/
+          if-no-files-found: ignore
+
+  pages:
+    name: Publish to GitHub Pages
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: [engine, browser]
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - run: python3 build.py
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+      - id: deployment
+        uses: actions/deploy-pages@v5

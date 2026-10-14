@@ -1,0 +1,12 @@
+node_modules/
+dist/
+shots/
+__pycache__/
+*.pyc
+# Erin's Audio Corner plot images: fetched on demand by research/lsi/fetch_sources.py, never committed
+research/lsi/images/
+research/lsi/*.png
+research/lsi/out/*.png
+research/lsi/outc/*.png
+research/lsi/outhd/*.png
+.DS_Store
