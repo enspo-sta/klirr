@@ -44,6 +44,12 @@ npm run serve                 # http://localhost:8000 serves dist/
 Run `npm test` after any change to `engine.js`, `library.json` or `research/`, and `npm run test:browser`
 after any change to `src/`. Look at the screenshots in `shots/` after visual changes.
 
+In a cloud session the network may block the headless-browser download (`npx playwright install chromium`).
+If so, run `npm test`, push the branch, and read the "Page in a headless browser" job in GitHub Actions,
+which runs the four browser tests on every push and pull request and keeps their screenshots as an artifact.
+Rerunning the extraction needs network access to `erinsaudiocorner.com` and `dl.dropboxusercontent.com`
+and the `tesseract` program.
+
 ## Rules
 
 - **The Guide's numbers are checked.** `tests/test_engine.js` and `tests/cmp_erin.js` fail when the engine no longer
