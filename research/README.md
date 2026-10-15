@@ -11,6 +11,7 @@ Everything `build_library.py` reads to make `library.json`.
 | `lsi/sources.json` | Image file name to original URL, for every image the configs name. |
 | `lsi/fetch_sources.py` | Downloads those images into `lsi/images/` (not committed). |
 | `lsi/out/`, `lsi/outc/`, `lsi/outhd/` | Extraction results: points plus the axis calibration of every curve (tick pixel positions, largest residual). |
+| `reference/hb.py`, `reference/run_reference.py`, `reference/reference.json` | An independent harmonic-balance solver of the same model (frequency domain, Newton iteration, no time stepping) and its solution of 26 cases: infinite baffle, sealed, vented, passive radiator, current drive, both stiffness options. `tests/reference_test.js` compares the engine with it; rerun `run_reference.py` (numpy and node) when the built-in curves change. |
 
 ## Method
 
