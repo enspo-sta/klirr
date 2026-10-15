@@ -462,7 +462,7 @@ App.views.maxspl = (() => {
           field('Amplifier limit, RMS', numInput('max-vmax', st.vmax, (v) => { st.vmax = clamp(v || 40, 1, 1000); saveSettings(); }), 'V')),
         checkbox('max-power', st.power, 'Limit input power to the rated power when the driver has one', (v) => { st.power = v; saveSettings(); }),
         rb.el, pb.el,
-        h('p', { class: 'hint' }, 'A criterion set to 0 is off. At each frequency a search finds the highest drive level that passes every criterion, usually to within 0.1 dB. 40 V RMS is 400 W into 4 Ω or 200 W into 8 Ω. Power is the heat in the DC resistance, Re·I²; long-term thermal compression is not modelled.'))));
+        h('p', { class: 'hint' }, 'A criterion set to 0 is off. At each frequency a search finds the highest drive level that passes every criterion, usually to within 0.1 dB. The amplifier limit applies to each way\'s voltage at the driver terminals, after its filters and gain, so a boost such as a Linkwitz transform reaches it sooner. 40 V RMS is 400 W into 4 Ω or 200 W into 8 Ω. Power is the heat in the DC resistance, Re·I²; long-term thermal compression is not modelled.'))));
     pM = h('div'); tbl = h('div', { class: 'tbl-wrap' });
     const res = h('div', { class: 'stack' },
       h('div', { class: 'card' }, h('div', { class: 'card-h' }, h('div', { class: 't' }, h('span', { class: 'kicker' }, 'Result'), h('h2', null, 'Maximum fundamental SPL at 1 m')), exportButtons(() => App._maxP, 'klirr-max-spl')), pM, h('p', { class: 'hint' }, 'Hover a point to see which criterion stopped it.')),
