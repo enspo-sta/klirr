@@ -1,8 +1,9 @@
 """Builds library.json, the built-in driver library, from the extraction outputs in research/.
 
 Run from anywhere: python3 build_library.py. Every number comes from research/lsi/*/extracted.json (pixel extraction),
-research/lsi/outhd/hd_extracted.json (measured harmonic distortion) and research/erin/index.json (the review pages'
-small-signal tables, read as text). Nothing here is estimated except the SB34NRXL75-8 entry, which says so.
+research/lsi/outhd/hd_extracted.json (measured harmonic distortion), research/lsi/xp/fit_ranges.json (Klippel's fit range
+±xp, measured from the plots) and research/erin/index.json (the review pages' small-signal tables, read as text).
+Nothing here is estimated except the SB34NRXL75-8 entry, which says so.
 """
 import json, os, re
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -12,6 +13,7 @@ for f in [R('lsi', 'outc', 'extracted.json'), R('lsi', 'out', 'extracted.json')]
     for r in json.load(open(f)): ex[r['name']] = r
 hd = {r['name']: r for r in json.load(open(R('lsi', 'outhd', 'hd_extracted.json')))}
 erin = json.load(open(R('erin', 'index.json')))
+xp = json.load(open(R('lsi', 'xp', 'fit_ranges.json')))['drivers']  # Klippel's fit range ±xp, measured from the plots by research/lsi/xp_extract.py
 RET = '2026-09-26'
 IMG = {
  'ptt8': ('purifi_ptt80x04-nab-02', {'all': 'https://dl.dropboxusercontent.com/s/y2nj3jb722e3jq8/LSI.png?dl=0'}),
@@ -65,7 +67,9 @@ for key, (brand, model, role, size) in META.items():
         'badge': 'measured', 'ts': ts, 'nl': nl,
         'sources': [{'sid': 's1', 'publisher': "Erin's Audio Corner", 'title': info['title'], 'url': info['url'], 'retrieved': RET,
                      'what': 'Small-signal parameters from the review\'s Klippel LPM table (text); Bl(x), Kms(x) and Le(x) pixel-extracted from the review\'s Klippel LSI plots.'}],
-        'extraction': {'method': 'pixel', 'tool': 'OCR-read tick labels paired with detected gridlines, least-squares axis fit (every labelled tick is a check tick, max residual < 1 px), exact-colour mask, per-column continuity tracking, 161-point uniform resample', 'curves': ext},
+        'extraction': {'method': 'pixel', 'tool': 'OCR-read tick labels paired with detected gridlines, least-squares axis fit (every labelled tick is a check tick, max residual < 1 px), exact-colour mask, per-column continuity tracking, 161-point uniform resample', 'curves': ext,
+                       'fit_range': {'xp_mm': xp[key]['xp_mm'], 'how': "Extent of the black segment the Klippel plots draw for the fit range (legend 'Xp- < X < Xp+'), measured with the extraction's axis calibration by research/lsi/xp_extract.py, median of the three plots."}},
+        'fitRange': xp[key]['xp_mm'],
         'notes': ' '.join(note + ['Curves set the shape of each nonlinearity; absolute small-signal values come from the LPM table.']),
     }
     lib.append(d)

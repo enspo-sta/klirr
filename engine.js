@@ -211,16 +211,24 @@
       id: D.id, label: D.label || [D.brand, D.model].filter(Boolean).join(' ') || D.id, ts, der,
       curves: { bl: cBl, kms: cK, le: cL }, r: { bl: rBl, kms: rK, le: rL },
       tab: { x0: x0 * 1e-3, inv: 1 / (dx * 1e-3), n: N, Bl: tBl, F: tF, L: tL, dL: tdL },
-      dataRange: [dataLo, dataHi], minL,
+      dataRange: [dataLo, dataHi], fitRange: fitRangeOf(D, dataLo, dataHi), minL,
     };
+  }
+  // Klippel fits its curves over a working range xp- < x < xp+ (where the coil spends more than 99 % of the time) and
+  // draws them out to ±Xprot. A driver entry may give that range as fitRange: [xp-, xp+] in mm; without it the whole
+  // data range counts. Limits are evaluated inside it, as Klippel does, and a coil beyond it gets a warning.
+  function fitRangeOf(D, lo, hi) {
+    const f = D.fitRange;
+    if (Array.isArray(f) && f.length === 2 && +f[0] < 0 && +f[1] > 0) return [Math.max(+f[0], lo), Math.min(+f[1], hi)];
+    return [lo, hi];
   }
 
   // Klippel displacement limits (IEC 62458 definitions, see guide). All values in mm.
   function displacementLimits(cd) {
     const out = {};
     const scan = (fn, thr, limitDir) => { // fn(x) returns ratio; limitDir: 'min' threshold or 'maxdev'
-      const lo = isFinite(cd.dataRange[0]) ? cd.dataRange[0] : -3 * (cd.ts.XmaxMm || 10);
-      const hi = isFinite(cd.dataRange[1]) ? cd.dataRange[1] : 3 * (cd.ts.XmaxMm || 10);
+      const lo = isFinite(cd.fitRange[0]) ? cd.fitRange[0] : -3 * (cd.ts.XmaxMm || 10);
+      const hi = isFinite(cd.fitRange[1]) ? cd.fitRange[1] : 3 * (cd.ts.XmaxMm || 10);
       const R = Math.min(-lo, hi); const step = Math.max(0.002, R / 4000);
       let worst = limitDir === 'min' ? 1 : 0, prevX = 0, prevW = worst;
       for (let X = step; X <= R + 1e-9; X += step) {
@@ -756,6 +764,7 @@
         vport: svp ? Math.max(Math.abs(svp.min), Math.abs(svp.max)) : 0,
         xpr: sxr ? Math.max(Math.abs(sxr.min), Math.abs(sxr.max)) * 1e3 : 0,
         outOfRange: sx ? (sx.min * 1e3 < range[0] || sx.max * 1e3 > range[1]) : false,
+        outOfFit: sx ? (sx.min * 1e3 < cw.cd.fitRange[0] || sx.max * 1e3 > cw.cd.fitRange[1]) : false,
       };
     });
   }
@@ -1135,7 +1144,7 @@
       curves[k] = { x: Array.from(xs), r: Array.from(xs, (x) => cd.r[k](x)), lo: c.lo, hi: c.hi, fitRms: c.info.fitRms, fitOrder: c.info.fitOrder, y0: c.y0 };
       if (D.nl[k].type === 'points') { curves[k].px = D.nl[k].x.slice(); curves[k].py = D.nl[k].y.map((y) => (k === 'kms' && D.nl[k].quantity === 'cms' ? 1 / y : y) / c.y0); }
     }
-    return { ts: cd.ts, der: cd.der, lim, curves, dataRange: cd.dataRange };
+    return { ts: cd.ts, der: cd.der, lim, curves, dataRange: cd.dataRange, fitRange: cd.fitRange };
   }
 
   const API = { linearCurves, hdSweep, imdSweep, multitone, maxSpl, waveform, auralize, driverSummary, displacementLimits, compileDriver, compileSetup, linearSetup, chooseFs, derived, tsOf };

@@ -81,19 +81,19 @@ p(t at 1 m) = ρ/(Ω·r)·[Sd·a(t + x/c) + Sp·ap + Sr·ar]</span>
       <h3>Pixel extraction checked against published limits</h3>
       <p>Erin's Audio Corner publishes Klippel's displacement limits as text next to the plots. Klirr's limits, computed from its own extraction of those plots:</p>
       <div class="tbl-wrap"><table class="t">
-        <thead><tr><th>Driver</th><th class="n">X_Bl 82 % published / Klirr</th><th class="n">X_C 75 % published / Klirr</th></tr></thead>
+        <thead><tr><th>Driver</th><th class="n">X_Bl 82 % published / Klirr</th><th class="n">X_C 75 % published / Klirr</th><th class="n">X_L 10 % published / Klirr</th></tr></thead>
         <tbody>
-          <tr><td>Purifi PTT8.0X04-NAB-02</td><td class="n">&gt;8.8 / &gt;10.3</td><td class="n">6.0 / 5.5</td></tr>
-          <tr><td>Purifi PTT6.5X04-NAA-08</td><td class="n">&gt;8.7 / 9.6</td><td class="n">5.0 / 5.1</td></tr>
-          <tr><td>Purifi PTT6.5M08-NFA-01A</td><td class="n">3.3 / 3.3</td><td class="n">5.1 / 5.1</td></tr>
-          <tr><td>Purifi PTT6.5W04-01A</td><td class="n">9.1 / 9.1</td><td class="n">6.9 / 6.9</td></tr>
-          <tr><td>Purifi PTT4.0W04-01A</td><td class="n">&gt;7.6 / 8.7</td><td class="n">4.7 / 4.7</td></tr>
-          <tr><td>SB Acoustics SB17CAC35-4</td><td class="n">5.1 / 5.1</td><td class="n">2.8 / 2.8</td></tr>
-          <tr><td>ScanSpeak Illuminator 18WU/4741T-00</td><td class="n">10.2 / 10.2</td><td class="n">8.5 / 8.4</td></tr>
-          <tr><td>Dynaudio MW182</td><td class="n">5.1 / 5.1</td><td class="n">3.9 / 3.9</td></tr>
-          <tr><td>SEAS W18NX-001</td><td class="n">&gt;6.0 / 6.1</td><td class="n">3 / 3.0</td></tr>
+          <tr><td>Purifi PTT8.0X04-NAB-02</td><td class="n">&gt;8.8 / &gt;8.8</td><td class="n">6.0 / 5.5</td><td class="n">&gt;8.8 / &gt;8.8</td></tr>
+          <tr><td>Purifi PTT6.5X04-NAA-08</td><td class="n">&gt;8.7 / &gt;8.7</td><td class="n">5.0 / 5.1</td><td class="n">&gt;8.7 / &gt;8.7</td></tr>
+          <tr><td>Purifi PTT6.5M08-NFA-01A</td><td class="n">3.3 / 3.3</td><td class="n">5.1 / 5.1</td><td class="n">&gt;5.8 / &gt;5.8</td></tr>
+          <tr><td>Purifi PTT6.5W04-01A</td><td class="n">9.1 / 9.1</td><td class="n">6.9 / 6.9</td><td class="n">&gt;11.2 / &gt;11.2</td></tr>
+          <tr><td>Purifi PTT4.0W04-01A</td><td class="n">&gt;7.6 / &gt;7.6</td><td class="n">4.7 / 4.7</td><td class="n">&gt;7.6 / &gt;7.6</td></tr>
+          <tr><td>SB Acoustics SB17CAC35-4</td><td class="n">5.1 / 5.1</td><td class="n">2.8 / 2.8</td><td class="n">&gt;5.2 / &gt;5.2</td></tr>
+          <tr><td>ScanSpeak Illuminator 18WU/4741T-00</td><td class="n">10.2 / 10.2</td><td class="n">8.5 / 8.4</td><td class="n">&gt;11.4 / &gt;11.5</td></tr>
+          <tr><td>Dynaudio MW182</td><td class="n">5.1 / 5.1</td><td class="n">3.9 / 3.9</td><td class="n">&gt;9.0 / &gt;9.0</td></tr>
+          <tr><td>SEAS W18NX-001</td><td class="n">&gt;6.0 / &gt;6.0</td><td class="n">3 / 3.0</td><td class="n">&gt;6.0 / &gt;6.0</td></tr>
         </tbody></table></div>
-      <p>Values in mm. Seventeen of eighteen agree within 0.1 mm or are consistent with a published lower bound; the PTT8 compliance limit is 0.5 mm short. Published X_D values use the large-signal resonance, which Klirr now does as well when a Kms(x) curve exists.</p>
+      <p>Values in mm. Twenty-six of twenty-seven agree within 0.1 mm; the PTT8 compliance limit is 0.5 mm short. Klippel fits its curves over a working range xp− &lt; x &lt; xp+, where the coil spends more than 99 % of the time, and draws them further, out to ±Xprot, the largest displacement the protection system allowed (<a href="https://docs.klippel.de/db-lab/latest/transducer-parameter-identification/lsi3/lsi3.html" target="_blank" rel="noopener">Klippel's large-signal identification manual</a>). It evaluates its limits only inside the working range and prints "&gt;" with the range's shorter side when a threshold is not reached there. The plots draw that range in black; <code>research/lsi/xp_extract.py</code> measures it from the same images, each built-in driver stores it as its fit range, and Klirr evaluates its limits inside it the same way. A "&gt;" value matches Klippel's within 0.1 mm on all thirteen. Beyond the fit range the curves rest on less than 1 % of the measurement, so the Distortion table marks a coil that goes there. Published X_D values use the large-signal resonance, which Klirr now does as well when a Kms(x) curve exists. These published values are stored in <code>research/erin/limits.json</code>, and <code>tests/test_engine.js</code> checks this table against them and against the engine.</p>
       <h3>Simulation against measured distortion</h3>
       <p>Harmonic distortion at "96 dB at 1 m" from Erin's Audio Corner, pixel-extracted, against Klirr on an infinite baffle with the voltage set for 96 dB at 500 Hz. Simulated / measured, dB re fundamental:</p>
       <div class="tbl-wrap"><table class="t">
@@ -129,6 +129,7 @@ p(t at 1 m) = ρ/(Ω·r)·[Sd·a(t + x/c) + Sp·ap + Sr·ar]</span>
       <h2>When to distrust a result</h2>
       <ul>
         <li>The table in Distortion shows ⚠ when the coil left the measured range; the curve extension beyond it is a guess.</li>
+        <li>It shows † when the coil went past Klippel's fit range ±xp but stayed inside the plotted curves. There the curves rest on less than 1 % of the measurement; the Drivers view shades that band.</li>
         <li>Above a few hundred hertz, or below −60 dB, expect real drivers to measure worse than the model.</li>
         <li>A driver with an estimated or single-limit shape tells you about that shape, not about the driver.</li>
         <li>What would change these conclusions: a Klippel LSI curve set that disagrees with the pixel extraction, a measurement in the same conditions that departs from the model in the bass, or large-signal Rms data that change damping at high level.</li>

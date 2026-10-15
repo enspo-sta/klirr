@@ -1,0 +1,358 @@
+{
+ "method": "Measure Klippel's fit range \u00b1xp in each extracted Klippel plot. Median of the three plots per driver.",
+ "plots": {
+  "dynmw182_bl": {
+   "black_mm": [
+    -9.06,
+    9.17
+   ],
+   "plotted_mm": [
+    -10.46,
+    10.46
+   ]
+  },
+  "dynmw182_kms": {
+   "black_mm": [
+    -9.02,
+    8.52
+   ],
+   "plotted_mm": [
+    -10.47,
+    10.47
+   ]
+  },
+  "dynmw182_le": {
+   "black_mm": [
+    -8.49,
+    9.17
+   ],
+   "plotted_mm": [
+    -10.47,
+    10.47
+   ]
+  },
+  "ptt4w_bl": {
+   "black_mm": [
+    -7.58,
+    8.01
+   ],
+   "plotted_mm": [
+    -8.74,
+    8.74
+   ]
+  },
+  "ptt4w_kms": {
+   "black_mm": [
+    -7.58,
+    8.01
+   ],
+   "plotted_mm": [
+    -8.75,
+    8.75
+   ]
+  },
+  "ptt4w_le": {
+   "black_mm": [
+    -7.59,
+    8.01
+   ],
+   "plotted_mm": [
+    -8.75,
+    8.75
+   ]
+  },
+  "ptt65m_bl": {
+   "black_mm": [
+    -5.79,
+    6.18
+   ],
+   "plotted_mm": [
+    -6.7,
+    6.7
+   ]
+  },
+  "ptt65m_kms": {
+   "black_mm": [
+    -5.79,
+    6.18
+   ],
+   "plotted_mm": [
+    -6.7,
+    6.7
+   ]
+  },
+  "ptt65m_le": {
+   "black_mm": [
+    -5.79,
+    6.18
+   ],
+   "plotted_mm": [
+    -6.66,
+    6.68
+   ]
+  },
+  "ptt65w_bl": {
+   "black_mm": [
+    -11.24,
+    11.37
+   ],
+   "plotted_mm": [
+    -12.68,
+    12.68
+   ]
+  },
+  "ptt65w_kms": {
+   "black_mm": [
+    -11.24,
+    11.38
+   ],
+   "plotted_mm": [
+    -11.66,
+    12.62
+   ]
+  },
+  "ptt65w_le": null,
+  "ptt65x_bl": {
+   "black_mm": [
+    -8.71,
+    9.29
+   ],
+   "plotted_mm": [
+    -10.31,
+    10.31
+   ]
+  },
+  "ptt65x_kms": {
+   "black_mm": [
+    -8.72,
+    9.28
+   ],
+   "plotted_mm": [
+    -10.28,
+    10.28
+   ]
+  },
+  "ptt65x_le": {
+   "black_mm": [
+    -7.5,
+    6.85
+   ],
+   "plotted_mm": [
+    -10.25,
+    10.25
+   ]
+  },
+  "ptt8_bl": {
+   "black_mm": [
+    null,
+    9.42
+   ],
+   "plotted_mm": [
+    -10.32,
+    10.32
+   ]
+  },
+  "ptt8_kms": {
+   "black_mm": [
+    -8.83,
+    9.43
+   ],
+   "plotted_mm": [
+    -10.32,
+    10.32
+   ]
+  },
+  "ptt8_le": {
+   "black_mm": [
+    -8.82,
+    9.47
+   ],
+   "plotted_mm": [
+    -10.28,
+    10.28
+   ]
+  },
+  "sb17cac_bl": {
+   "black_mm": [
+    null,
+    5.38
+   ],
+   "plotted_mm": [
+    -6.0,
+    6.0
+   ]
+  },
+  "sb17cac_kms": {
+   "black_mm": [
+    -5.2,
+    5.38
+   ],
+   "plotted_mm": [
+    -6.0,
+    6.0
+   ]
+  },
+  "sb17cac_le": {
+   "black_mm": [
+    -5.19,
+    5.38
+   ],
+   "plotted_mm": [
+    -6.0,
+    6.0
+   ]
+  },
+  "seas_bl": {
+   "black_mm": [
+    -6.03,
+    6.83
+   ],
+   "plotted_mm": [
+    -7.31,
+    7.31
+   ]
+  },
+  "seas_kms": {
+   "black_mm": [
+    -6.04,
+    6.83
+   ],
+   "plotted_mm": [
+    -7.31,
+    7.31
+   ]
+  },
+  "seas_le": {
+   "black_mm": [
+    -6.04,
+    6.82
+   ],
+   "plotted_mm": [
+    -7.31,
+    7.31
+   ]
+  },
+  "ss18wu_bl": {
+   "black_mm": [
+    -11.47,
+    11.47
+   ],
+   "plotted_mm": [
+    -12.8,
+    12.8
+   ]
+  },
+  "ss18wu_kms": {
+   "black_mm": [
+    -11.48,
+    11.48
+   ],
+   "plotted_mm": [
+    -12.8,
+    12.8
+   ]
+  },
+  "ss18wu_le": {
+   "black_mm": [
+    -11.47,
+    11.47
+   ],
+   "plotted_mm": [
+    -12.8,
+    12.8
+   ]
+  }
+ },
+ "drivers": {
+  "dynmw182": {
+   "xp_mm": [
+    -9.02,
+    9.17
+   ],
+   "plots_used": [
+    3,
+    3
+   ]
+  },
+  "ptt4w": {
+   "xp_mm": [
+    -7.58,
+    8.01
+   ],
+   "plots_used": [
+    3,
+    3
+   ]
+  },
+  "ptt65m": {
+   "xp_mm": [
+    -5.79,
+    6.18
+   ],
+   "plots_used": [
+    3,
+    3
+   ]
+  },
+  "ptt65w": {
+   "xp_mm": [
+    -11.24,
+    11.38
+   ],
+   "plots_used": [
+    2,
+    2
+   ]
+  },
+  "ptt65x": {
+   "xp_mm": [
+    -8.71,
+    9.28
+   ],
+   "plots_used": [
+    3,
+    3
+   ]
+  },
+  "ptt8": {
+   "xp_mm": [
+    -8.82,
+    9.43
+   ],
+   "plots_used": [
+    2,
+    3
+   ]
+  },
+  "sb17cac": {
+   "xp_mm": [
+    -5.2,
+    5.38
+   ],
+   "plots_used": [
+    2,
+    3
+   ]
+  },
+  "seas": {
+   "xp_mm": [
+    -6.04,
+    6.83
+   ],
+   "plots_used": [
+    3,
+    3
+   ]
+  },
+  "ss18wu": {
+   "xp_mm": [
+    -11.47,
+    11.47
+   ],
+   "plots_used": [
+    3,
+    3
+   ]
+  }
+ }
+}
