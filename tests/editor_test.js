@@ -68,10 +68,12 @@ const SHOTS = path.resolve(__dirname, '..', 'shots'); require('fs').mkdirSync(SH
   await page.click('#tab-drivers'); await page.waitForTimeout(300);
   await page.click('#view-drivers button:has-text("New driver")'); await page.waitForTimeout(400);
   await page.click('#view-drivers summary:has-text("Fill from pasted datasheet text")'); await page.waitForTimeout(150);
-  await page.fill('#view-drivers details:has(summary:has-text("Fill from pasted")) textarea', 'Re 5.8 Ω\nLe 0.35 mH\nBl 7.2 Tm\nMms 18.5 g\nCms 0.95 mm/N\nRms 1.1 kg/s\nSd 132 cm²\nXmax 6 mm\nPe 80 W');
+  await page.fill('#view-drivers details:has(summary:has-text("Fill from pasted")) textarea', 'Re 5.8 Ω\nLe 350 µH\nBl 7.2 Tm\nMms 0.0185 kg\nCms 950 µm/N\nRms 1.1 kg/s\nSd 0.0132 m²\nXmax 6 mm\nPe 80 W');
   await page.click('#view-drivers button:has-text("Fill parameters")'); await page.waitForTimeout(500);
   const ts = await page.evaluate(() => { const d = App.userDrivers[App.userDrivers.length - 1]; return d.ts; });
   console.log('ts after paste:', JSON.stringify(ts));
+  // units are converted to Klirr's (mH, g, mm/N, cm²)
+  for (const [k, v] of Object.entries({ Le: 0.35, Mms: 18.5, Cms: 0.95, Sd: 132 })) if (Math.abs(ts[k] - v) > 1e-9) errors.push('paste: ' + k + ' is ' + ts[k] + ', expected ' + v);
   await page.click('#view-drivers summary:has-text("Paste Klippel polynomial coefficients")'); await page.waitForTimeout(150);
   await page.fill('#view-drivers details:has(summary:has-text("Paste Klippel")) textarea', 'b0 7.2 b1 -0.05 b2 -0.035 b3 0.001 b4 -0.0004\nk0 1.05 k1 0.012 k2 0.006 k3 0.0002 k4 0.0003\nl0 0.35 l1 -0.018 l2 -0.0008');
   await num('dr-klr', 9);

@@ -341,7 +341,8 @@
       out.vc = p.vc ? +p.vc : 0.375 / dh; // Vanderkooy: critical velocity × port diameter held constant (5 m/s at 75 mm)
       out.vw = p.vw ? +p.vw : 0.075 / dh; // transition width (1 m/s at 75 mm)
       out.dh = dh; out.Fb = Fb; out.nPorts = n; out.Sp1 = Sp1;
-      out.Lphys = out.Leff - (p.shape === 'slot' ? 0 : 1.46 * dh / 2); // end corrections 0.85r + 0.61r
+      // physical length for a round port, end corrections 0.85r + 0.61r; a slot's end correction depends on how it meets the walls, so only its effective length is given
+      out.Lphys = p.shape === 'slot' ? null : out.Leff - 1.46 * dh / 2;
       wref = wb;
     } else if (out.type === 'pr') {
       const p = e.pr || {};
@@ -374,8 +375,8 @@
       const enc = compileEnclosure(w.enclosure, cd);
       const secs = wayFilterSections(w);
       const g = Math.pow(10, (+w.gainDb || 0) / 20) * (w.invert ? -1 : 1);
-      const ReE = cd.ts.Re * (1 + ALPHA_R * (+w.dT || 0)) + (+w.Rs || 0);
-      return { cd, enc, secs, g, n: Math.max(1, +w.count || 1), delay: Math.max(0, +w.delayMs || 0) * 1e-3, ReE, drive: w.drive === 'current' ? 'current' : 'voltage', label: w.label || cd.label };
+      const ReHot = cd.ts.Re * (1 + ALPHA_R * (+w.dT || 0)), ReE = ReHot + (+w.Rs || 0);
+      return { cd, enc, secs, g, n: Math.max(1, +w.count || 1), delay: Math.max(0, +w.delayMs || 0) * 1e-3, ReE, ReHot, drive: w.drive === 'current' ? 'current' : 'voltage', label: w.label || cd.label };
     });
     return { ways, K: AIR.rho / (space * r), space, r };
   }
@@ -752,7 +753,7 @@
       const xpk = sx ? Math.max(Math.abs(sx.min), Math.abs(sx.max)) * 1e3 : 0;
       return {
         xpk, xdc: sx ? sx.mean * 1e3 : 0, xmin: sx ? sx.min * 1e3 : 0, xmax: sx ? sx.max * 1e3 : 0,
-        irms: si ? si.rms : 0, pdiss: si ? si.rms * si.rms * cw.cd.ts.Re : 0,
+        irms: si ? si.rms : 0, pdiss: si ? si.rms * si.rms * cw.ReHot : 0, // heat in the voice coil at its set temperature
         vport: svp ? Math.max(Math.abs(svp.min), Math.abs(svp.max)) : 0,
         xpr: sxr ? Math.max(Math.abs(sxr.min), Math.abs(sxr.max)) * 1e3 : 0,
         outOfRange: sx ? (sx.min * 1e3 < range[0] || sx.max * 1e3 > range[1]) : false,
@@ -899,9 +900,12 @@
     for (const { setup, cs, list } of plan) {
       const fs = args.fs || chooseFs(cs, Math.min(args.fHi * 3, 30000));
       const fsIn = 2 * fs;
-      let N = 1; while (fs / N > args.fLo / 10) N <<= 1;
-      const df = fs / N;
       const freqs = fracOctaveFreqs(args.fLo, args.fHi, args.perOct || 6);
+      // tones sit on odd bins, 2·df apart; keep that spacing well below the closest tone spacing (at the lowest tone)
+      // so rounding to a free odd bin does not push the lowest tones off their log-spaced positions
+      const gap = freqs.length > 1 ? freqs[1] - freqs[0] : args.fLo;
+      let N = 1; while (fs / N > Math.min(args.fLo / 10, gap / 4)) N <<= 1;
+      const df = fs / N;
       const bins = []; const used = new Set();
       for (const f of freqs) { let k = Math.round(f / df); if (k % 2 === 0) k += 1; while (used.has(k)) k += 2; used.add(k); bins.push(k); }
       const J = bins.length;

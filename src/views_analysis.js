@@ -211,7 +211,7 @@ App.views.imd = (() => {
         field('Bass tone f1', numInput('imd-f1', iec ? null : st.f1, (v) => { st.f1 = clamp(v || 40, 5, 10000); st.preset = 'custom'; saveSettings(); renderFreq(); }, iec ? { disabled: true, placeholder: 'fs' } : null), 'Hz'),
         field('Voice tone f2', numInput('imd-f2', iec ? null : st.f2, (v) => { st.f2 = clamp(v || 400, 20, 20000); st.preset = 'custom'; saveSettings(); renderFreq(); }, iec ? { disabled: true, placeholder: '8.5·fs' } : null), 'Hz'),
         field('U1 : U2', numInput('imd-ratio', st.ratioDb, (v) => { st.ratioDb = clamp(v || 0, -40, 40); saveSettings(); }), 'dB')));
-      freqBox.append(h('p', { class: 'hint' }, iec ? 'Each setup gets f1 at the resonance of its first driver and f2 = 8.5·f1, with U1 = 4·U2 (12.04 dB), as in Klippel\'s Xmax method.' : '12.04 dB is the 4:1 voltage ratio of IEC 60268; 0 dB gives equal voltages.'));
+      freqBox.append(h('p', { class: 'hint' }, iec ? 'Each setup gets f1 at the small-signal resonance of its first driver (the X_D limit in Drivers uses the large-signal resonance) and f2 = 8.5·f1, with U1 = 4·U2 (12.04 dB), as in Klippel\'s Xmax method.' : '12.04 dB is the 4:1 voltage ratio of IEC 60268; 0 dB gives equal voltages.'));
     };
     renderFreq();
     const sweepBox = h('div', { class: 'fs-body' });
@@ -462,7 +462,7 @@ App.views.maxspl = (() => {
           field('Amplifier limit, RMS', numInput('max-vmax', st.vmax, (v) => { st.vmax = clamp(v || 40, 1, 1000); saveSettings(); }), 'V')),
         checkbox('max-power', st.power, 'Limit input power to the rated power when the driver has one', (v) => { st.power = v; saveSettings(); }),
         rb.el, pb.el,
-        h('p', { class: 'hint' }, 'A criterion set to 0 is off. At each frequency a search finds the highest drive level that passes every criterion, usually to within 0.1 dB. 40 V RMS is 400 W into 4 Ω or 200 W into 8 Ω. Power is the heat in the DC resistance, Re·I²; long-term thermal compression is not modelled.'))));
+        h('p', { class: 'hint' }, 'A criterion set to 0 is off. At each frequency a search finds the highest drive level that passes every criterion, usually to within 0.1 dB. 40 V RMS is 400 W into 4 Ω or 200 W into 8 Ω. Power is the heat in the voice coil, Re·I² with Re at the temperature set in the setup. A rated power is usually defined with a noise signal over hours, so this sine comparison is approximate; long-term thermal compression is not modelled.'))));
     pM = h('div'); tbl = h('div', { class: 'tbl-wrap' });
     const res = h('div', { class: 'stack' },
       h('div', { class: 'card' }, h('div', { class: 'card-h' }, h('div', { class: 't' }, h('span', { class: 'kicker' }, 'Result'), h('h2', null, 'Maximum fundamental SPL at 1 m')), exportButtons(() => App._maxP, 'klirr-max-spl')), pM, h('p', { class: 'hint' }, 'Hover a point to see which criterion stopped it.')),

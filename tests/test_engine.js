@@ -66,7 +66,7 @@ const setupOf = (drv, enc, extra) => ({ id: 's', ways: [Object.assign({ driver: 
     const out = [];
     for (const fs of [96000, 192000, 384000]) { const p = util.hdPoint(cs, util.NL_ALL, fs, f, 8, 5); out.push([fs, 20 * Math.log10(p.hd[0]), 20 * Math.log10(p.hd[1]), p.spl]); }
     log(`   ${f} Hz:`, out.map((o) => `fs ${o[0] / 1000}k HD2 ${o[1].toFixed(3)} HD3 ${o[2].toFixed(3)} SPL ${o[3].toFixed(3)}`).join(' | '));
-    for (const k of [1, 2]) if (out[0][k] > -120) check(Math.abs(out[0][k] - out[2][k]) < 0.005, `T3 ${f} Hz H${k + 1} moves ${(out[0][k] - out[2][k]).toFixed(4)} dB between 96 and 384 kHz`);
+    for (const k of [1, 2]) if (out[0][k] > -120) check(Math.abs(out[0][k] - out[2][k]) < 0.002, `T3 ${f} Hz H${k + 1} moves ${(out[0][k] - out[2][k]).toFixed(4)} dB between 96 and 384 kHz`);
   }
 }
 

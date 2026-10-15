@@ -134,6 +134,17 @@ const MOCK = `
   await page.click('#tab-distortion'); await page.waitForTimeout(200);
   await page.waitForFunction(() => /Finished/.test(document.querySelector('#view-distortion .status')?.textContent || ''), null, { timeout: 120000 });
   console.log('distortion after reload:', await page.textContent('#view-distortion .status'));
+
+  // 8. another device deletes a driver this browser still holds: it must stay deleted, not be uploaded again
+  const m = JSON.parse(mockJson);
+  for (const k of Object.keys(m)) if (k.includes('/drivers/') && m[k].label === 'Imported test driver') delete m[k];
+  mockJson = JSON.stringify(m);
+  await page.reload();
+  await page.waitForFunction(() => /account/.test(document.querySelector('#store-state')?.textContent || ''), null, { timeout: 20000 });
+  await page.waitForTimeout(1200);
+  const gone = await page.evaluate(() => ({ local: App.userDrivers.map((d) => d.label), account: Object.values(window.__store).filter((v) => v && v.label).map((v) => v.label) }));
+  console.log('after a deletion elsewhere:', JSON.stringify(gone));
+  if (gone.local.includes('Imported test driver') || gone.account.includes('Imported test driver')) errors.push('a driver deleted on another device came back');
   console.log('errors/warnings:', errors.length ? '\n  ' + errors.join('\n  ') : 'none');
   if (errors.length) process.exitCode = 1;
   await browser.close();

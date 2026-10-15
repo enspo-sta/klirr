@@ -86,7 +86,7 @@ App.views.setups = (() => {
     let lc; try { lc = KE.API.linearCurves(es, freqs); } catch (e) { pv.info.innerHTML = ''; pv.info.append(h('div', { class: 'note warn' }, e.message)); return; }
     const g = 2.83, gdb = db20(g);
     const spl = [{ id: 'sum', name: s.ways.length > 1 ? 'Sum' : s.name, color: setupColor(s), pts: freqs.map((f, i) => [f, lc.spl[i] + gdb]) }];
-    if (s.ways.length > 1) lc.ways.forEach((w, k) => spl.push({ id: 'w' + k, name: 'Way ' + (k + 1), color: [GREY, '#9aa3b1', '#7d8594', '#6b7280'][k], width: 1.5, dash: [5, 4], pts: freqs.map((f, i) => [f, w.spl[i] + gdb]) }));
+    if (s.ways.length > 1) lc.ways.forEach((w, k) => spl.push({ id: 'w' + k, name: 'Way ' + (k + 1), color: [GREY, cssVar('--muted'), cssVar('--s5'), cssVar('--s4')][k], width: 1.5, dash: [5, 4], pts: freqs.map((f, i) => [f, w.spl[i] + gdb]) }));
     App._pvSpl.setData(spl);
     App._pvZ.setData(lc.ways.map((w, k) => ({ id: 'z' + k, name: 'Way ' + (k + 1), color: k ? GREY : setupColor(s), pts: freqs.map((f, i) => [f, w.zmag[i]]) })).filter((q) => q.pts.some((p) => isFinite(p[1]))));
     App._pvX.setData(lc.ways.map((w, k) => ({ id: 'x' + k, name: 'Way ' + (k + 1), color: k ? GREY : setupColor(s), pts: freqs.filter((f) => f <= 2000).map((f, i) => [f, w.xmm[i] * g]) })));
@@ -111,7 +111,7 @@ App.views.setups = (() => {
       encHost.append(field('Enclosure', selectInput('su-enc-' + i, e.type, [['ib', 'Infinite baffle'], ['sealed', 'Sealed box'], ['vented', 'Vented box'], ['pr', 'Passive radiator']], (v) => { e.type = v; if (v !== 'ib' && !e.Vb) e.Vb = 10; if (v === 'vented') e.port = Object.assign({ shape: 'round', d_mm: 60, n: 1, Fb: 35, Qp: 60, xi: 1 }, e.port || {}); if (v === 'pr') e.pr = Object.assign({ Sd: 200, Mmp: 60, Cmp: 0.8, Qmp: 8, n: 1, xlim: 12, thr: 0.5 }, e.pr || {}); if (v === 'vented' || v === 'pr') { if (e.Ql == null) e.Ql = 10; } renderEnc(); upd(); })));
       if (e.type === 'ib') { encHost.append(h('p', { class: 'hint' }, 'No box: the rear wave is ignored and the cone sees only its own suspension, as in an IEC baffle measurement.')); return; }
       const g = h('div', { class: 'grid3' });
-      g.append(field('Net volume', numInput('su-vb-' + i, e.Vb, (v) => { e.Vb = clamp(v || 10, 0.1, 5000); upd(); }), 'L'));
+      g.append(field('Net volume per driver', numInput('su-vb-' + i, e.Vb, (v) => { e.Vb = clamp(v || 10, 0.1, 5000); upd(); }), 'L'));
       g.append(field('Leakage Ql', numInput('su-ql-' + i, e.Ql, (v) => { e.Ql = v && v > 0 ? v : null; upd(); }, { placeholder: 'none' })));
       if (e.type === 'vented') {
         const p = e.port || (e.port = {});
@@ -314,7 +314,7 @@ App.views.drivers = (() => {
           h('tr', null, h('td', null, 'X_Bl: Bl falls to 82 % / 70 %'), h('td', { class: 'n' }, cell(L.xbl82)), h('td', { class: 'n' }, cell(L.xbl70))),
           h('tr', null, h('td', null, 'X_C: compliance falls to 75 % / 50 %'), h('td', { class: 'n' }, cell(L.xc75)), h('td', { class: 'n' }, cell(L.xc50))),
           h('tr', null, h('td', null, 'X_L: impedance at 8.5·fs changes 10 % / 17 %'), h('td', { class: 'n' }, cell(L.xl10)), h('td', { class: 'n' }, cell(L.xl17))),
-          h('tr', null, h('td', null, 'X_D: Doppler d2 = 10 % at f2 = 8.5·fs (' + L.xd10.basis + ', ' + fmt(L.xd10.fs, 1) + ' Hz)'), h('td', { class: 'n' }, cell(L.xd10)), h('td', { class: 'n' }, '–')))));
+          h('tr', null, h('td', null, 'X_D: Doppler sidebands at f2 = 8.5·fs reach 10 % root-sum-square, about 14 % as d2 (' + L.xd10.basis + ', ' + fmt(L.xd10.fs, 1) + ' Hz)'), h('td', { class: 'n' }, cell(L.xd10)), h('td', { class: 'n' }, '–')))));
       limHost.append(h('p', { class: 'hint', style: { marginTop: '6px' } }, '"> value" means the threshold is not reached inside the measured range. The 82/75/10 % set gives about 10 % distortion in a two-tone test; the 70/50/17 % set about 20 %, the usual subwoofer criterion.'));
     }
     if (editable) detHost.append(curveEditor(d));
@@ -333,10 +333,12 @@ App.views.drivers = (() => {
     const ta = h('textarea', { rows: '5', placeholder: 'Paste a datasheet table, e.g.\nRe 5.6 Ω\nLe 0.35 mH\nBl 7.1 Tm\nMms 17.9 g\nCms 0.98 mm/N\nRms 1.2 kg/s\nSd 132 cm²\nXmax 6 mm' });
     const out = h('p', { class: 'hint' });
     const btn = h('button', { class: 'btn sm', type: 'button', onclick: () => {
-      const got = parseTS(ta.value); const keys = Object.keys(got);
+      const { values: got, notes } = parseTSDetailed(ta.value); const keys = Object.keys(got);
       if (!keys.length) { out.textContent = 'No parameters recognised. Use lines like "Re 5.6" or "Bl = 7.1 Tm".'; return; }
       Object.assign(d.ts, got); if (got.Cms != null) delete d.ts.Kms;
       completeTS(d.ts);
+      const warn = tsWarnings(d.ts);
+      out.textContent = (notes.length ? 'Converted: ' + notes.join('; ') + '. ' : '') + (warn.length ? '⚠ Check the units: ' + warn.join(', ') + ' look implausible for a loudspeaker driver.' : '');
       driverChanged(d); toast('Filled ' + keys.join(', '));
     } }, 'Fill parameters');
     return h('div', { class: 'fs-body' }, ta, h('div', { class: 'btn-row' }, btn), out, h('p', { class: 'hint' }, 'Recognised: Re, Le, L2, R2, Bl, Mms, Cms, Kms, Rms, Sd, Xmax, Pe, and fs, Qms, Qes, Qts, Vas (used to fill Mms, Cms and Rms when they are missing).'));
@@ -404,13 +406,47 @@ App.views.drivers = (() => {
 })();
 
 // ------------------------------------------------------------------ parsing helpers
-function parseTS(text) {
-  const out = {}; const t = text.replace(/,(?=\d)/g, '.');
-  const grab = (re) => { const m = t.match(re); return m ? parseFloat(m[1]) : null; };
-  const pat = (names) => new RegExp('(?:^|[\\s(|;:])(?:' + names + ')\\s*(?:\\([^)]*\\))?\\s*[:=]?\\s*(-?\\d+(?:\\.\\d+)?(?:e-?\\d+)?)', 'im');
+// Units Klirr stores: Re, R2 Ω; Le, L2 mH; Bl T·m; Mms g; Cms mm/N; Kms N/mm; Rms kg/s; Sd cm²; Xmax mm; Pe W; fs Hz; Vas L.
+// A unit written after the value or in brackets after the name is converted; an unknown unit is left alone and reported.
+const TS_UNITS = {
+  Le: { mh: 1, uh: 1e-3, µh: 1e-3, μh: 1e-3, h: 1e3 },
+  L2: { mh: 1, uh: 1e-3, µh: 1e-3, μh: 1e-3, h: 1e3 },
+  Mms: { g: 1, gr: 1, gram: 1, grams: 1, kg: 1e3, mg: 1e-3 },
+  Cms: { 'mm/n': 1, 'um/n': 1e-3, 'µm/n': 1e-3, 'μm/n': 1e-3, 'm/n': 1e3 },
+  Kms: { 'n/mm': 1, 'kn/m': 1, 'n/m': 1e-3 },
+  Sd: { 'cm²': 1, cm2: 1, 'cm^2': 1, 'm²': 1e4, m2: 1e4, 'm^2': 1e4, 'mm²': 1e-2, mm2: 1e-2, 'mm^2': 1e-2 },
+  Vas: { l: 1, liter: 1, liters: 1, litre: 1, litres: 1, 'dm³': 1, dm3: 1, 'm³': 1e3, m3: 1e3, 'ft³': 28.3168, ft3: 28.3168, 'cu.ft': 28.3168, cuft: 28.3168 },
+  Xmax: { mm: 1, cm: 10, m: 1e3 },
+};
+function parseTSDetailed(text) {
+  const values = {}, notes = []; const t = text.replace(/,(?=\d)/g, '.');
+  const pat = (names) => new RegExp('(?:^|[\\s(|;:])(?:' + names + ')\\s*(?:\\(([^)]*)\\))?\\s*[:=]?\\s*(-?\\d+(?:\\.\\d+)?(?:e-?\\d+)?)[ \\t]*([a-zA-Zµμ/.²³^0-9]*)', 'im');
   const map = { Re: 'Re|R_e|Rdc|DC resistance', Le: 'Le|L_e|Voice coil inductance', L2: 'L2', R2: 'R2', Bl: 'Bl|BL|Force factor', Mms: 'Mms|M_ms|Moving mass', Cms: 'Cms|C_ms|Compliance', Kms: 'Kms|K_ms|Stiffness', Rms: 'Rms|R_ms|Mechanical (?:loss|resistance)', Sd: 'Sd|S_d|Effective (?:piston )?area', Xmax: 'Xmax|X_max|Linear excursion', Pe: 'Pe|Rated power|Power handling', fs: 'fs|Fs|f_s|Resonance(?: frequency)?', Qms: 'Qms|Q_ms', Qes: 'Qes|Q_es', Qts: 'Qts|Q_ts', Vas: 'Vas|V_as|Equivalent volume' };
-  for (const [k, names] of Object.entries(map)) { const v = grab(pat(names)); if (v != null && isFinite(v)) out[k] = v; }
-  return out;
+  for (const [k, names] of Object.entries(map)) {
+    const m = t.match(pat(names)); if (!m) continue;
+    let v = parseFloat(m[2]); if (!isFinite(v)) continue;
+    const unit = ((m[3] || '').replace(/[.]$/, '') || m[1] || '').trim().toLowerCase().replace(/\s+/g, '');
+    const table = TS_UNITS[k];
+    if (table && unit) {
+      if (table[unit] != null) { if (table[unit] !== 1) { v = +(v * table[unit]).toPrecision(10); notes.push(k + ' ' + m[2] + ' ' + unit + ' → ' + v); } }
+      else if (/[a-zµμ]/.test(unit)) notes.push(k + ': unit "' + unit + '" not recognised, value taken as is');
+    }
+    values[k] = v;
+  }
+  return { values, notes };
+}
+function parseTS(text) { return parseTSDetailed(text).values; }
+// Plausibility of a parameter set after completeTS: returns warnings in plain words (empty when it looks sane)
+function tsWarnings(ts) {
+  const w = []; const der = (() => { try { return KE.API.derived(KE.API.tsOf({ ts })); } catch (e) { return null; } })();
+  if (der) {
+    if (!(der.fs > 5 && der.fs < 3000)) w.push('resonance ' + fmt(der.fs, 1) + ' Hz');
+    if (!(der.Qts > 0.05 && der.Qts < 5)) w.push('Qts ' + fmt(der.Qts, 2));
+  }
+  if (ts.Le != null && ts.Le > 10) w.push('Le ' + fmt(ts.Le, 1) + ' mH');
+  if (ts.Sd != null && (ts.Sd < 1 || ts.Sd > 5000)) w.push('Sd ' + fmt(ts.Sd, 1) + ' cm²');
+  if (ts.Mms != null && (ts.Mms < 0.05 || ts.Mms > 2000)) w.push('Mms ' + fmt(ts.Mms, 2) + ' g');
+  return w;
 }
 function completeTS(ts) {
   const kappa = KE.AIR.kappa;
