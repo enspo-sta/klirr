@@ -2,14 +2,16 @@
 const E = require('../engine.js'); const { API } = E;
 const lib = require('../library.json');
 const meas = {}; for (const r of require('../research/lsi/outhd/hd_extracted.json')) meas[r.name] = r.series;
+// drive voltages printed on Erin's intermodulation charts of the same reviews (see the file for the chart titles)
+const DRIVE = require('../research/erin/drive_levels.json').drivers;
 const at = (s, f) => { let a = s[0]; for (let i = 1; i < s.length; i++) { const b = s[i]; if (b[0] >= f) { const t = (Math.log(f) - Math.log(a[0])) / (Math.log(b[0]) - Math.log(a[0])); return a[1] + t * (b[1] - a[1]); } a = b; } return NaN; };
 const freqs = [30, 40, 50, 60, 80, 100, 150, 200, 300, 500];
-// The Guide's table "Simulation against measured distortion" (96 dB, small-signal Kms): [f, simH2, measH2, simH3, measH3], whole dB.
+// The Guide's table "Simulation against measured distortion" (96 dB at Erin's printed voltage, small-signal Kms): [f, simH2, measH2, simH3, measH3], whole dB.
 // If the engine, the library or the extraction changes, this check fails until the Guide's table is updated to match.
 const GUIDE = {
-  ptt65m: [[30, -18, -17, -16, -13], [40, -22, -22, -22, -21], [60, -30, -34, -32, -30], [100, -44, -57, -45, -44], [150, -54, -55, -57, -53]],
-  ptt65x: [[30, -26, -22, -12, -16], [40, -30, -30, -24, -26], [60, -41, -40, -41, -41], [100, -52, -46, -62, -41], [150, -56, -55, -79, -61]],
-  ptt8: [[30, -32, -23, -29, -29], [40, -43, -30, -40, -41], [60, -60, -43, -53, -42], [100, -62, -56, -71, -55], [150, -65, -52, -87, -56]],
+  ptt65m: [[30, -17, -17, -12, -13], [40, -20, -22, -19, -21], [60, -29, -34, -29, -30], [100, -43, -57, -43, -44], [150, -53, -55, -54, -53]],
+  ptt65x: [[30, -26, -22, -10, -16], [40, -30, -30, -22, -26], [60, -40, -40, -40, -41], [100, -51, -46, -61, -41], [150, -55, -55, -77, -61]],
+  ptt8: [[30, -30, -23, -27, -29], [40, -41, -30, -38, -41], [60, -58, -43, -52, -42], [100, -62, -56, -70, -55], [150, -64, -52, -86, -56]],
 };
 const failures = [];
 for (const key of ['ptt8', 'ptt65x', 'ptt65m']) {
@@ -18,7 +20,7 @@ for (const key of ['ptt8', 'ptt65x', 'ptt65m']) {
     const d = JSON.parse(JSON.stringify(base)); d.abs = { kms: variant };
     const setup = { id: 'a', ways: [{ driver: d, count: 1, enclosure: { type: 'ib' }, filters: [] }], space: 'half', distance: 1 };
     for (const lvl of [86, 96]) {
-      const r = API.hdSweep({ setups: [setup], freqs, level: { mode: 'splref', value: lvl, fref: 500 }, harmonics: 3, mechanisms: false }, null)[0];
+      const r = API.hdSweep({ setups: [setup], freqs, level: { mode: 'voltage', value: DRIVE['eac-' + key].levels[lvl].U1 }, harmonics: 3, mechanisms: false }, null)[0];
       const m = meas[`${key}_hd${lvl}`];
       let e2 = 0, e3 = 0, n = 0; const rows = [];
       r.f.forEach((f, i) => {
