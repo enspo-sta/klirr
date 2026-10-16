@@ -12,8 +12,7 @@ for (const { case: c, f, hb } of ref) {
     const a = dB(e.hd[k]), b = dB(hb.hd[k]);
     if (b < -110) continue; // below the steady-state tolerance of the engine
     const d = a - b; worst = Math.max(worst, Math.abs(d)); row.push(`H${k + 2} ${a.toFixed(2)}/${b.toFixed(2)}`);
-    const tol = k < 2 ? 0.02 : 0.2; // H4 and H5 sit near the engine's settling tolerance in lightly damped cases
-    if (Math.abs(d) > tol) failures.push(`${c.name}: H${k + 2} ${a.toFixed(3)} dB against ${b.toFixed(3)} dB`);
+    if (Math.abs(d) > 0.02) failures.push(`${c.name}: H${k + 2} ${a.toFixed(3)} dB against ${b.toFixed(3)} dB`);
   }
   const dx = Math.abs(e.xdc - hb.xdc);
   if (dx > Math.max(2e-4, 0.01 * Math.abs(hb.xdc))) failures.push(`${c.name}: offset ${e.xdc.toFixed(4)} mm against ${hb.xdc.toFixed(4)} mm`);
