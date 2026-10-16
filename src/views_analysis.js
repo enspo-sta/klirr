@@ -143,14 +143,14 @@ App.views.distortion = (() => {
     App._hdC.setData(r.data.map((d, k) => ({ id: r.meta[k].id + 'c', name: r.meta[k].name, color: r.meta[k].color, pts: d.f.map((f, i) => [f, d.spl[i] - d.splLin[i]]), fmt: (v) => v.toFixed(2) + ' dB' })), { x: { min: fr[0], max: fr[1] } });
     // table
     const rows = r.data.map((d, k) => {
-      const m = r.meta[k]; let wx = { v: -1 }, wdc = { v: 0 }, w2 = { v: -1 }, w3 = { v: -1 }, oor = false;
+      const m = r.meta[k]; let wx = { v: -1 }, wdc = { v: 0 }, w2 = { v: -1 }, w3 = { v: -1 }, oor = false, oof = false;
       d.f.forEach((f, i) => {
-        d.ways[i].forEach((w) => { if (w.xpk > wx.v) wx = { v: w.xpk, f }; if (Math.abs(w.xdc) > Math.abs(wdc.v)) wdc = { v: w.xdc, f }; if (w.outOfRange) oor = true; });
+        d.ways[i].forEach((w) => { if (w.xpk > wx.v) wx = { v: w.xpk, f }; if (Math.abs(w.xdc) > Math.abs(wdc.v)) wdc = { v: w.xdc, f }; if (w.outOfRange) oor = true; if (w.outOfFit) oof = true; });
         if (d.hd[i][0] > w2.v) w2 = { v: d.hd[i][0], f }; if (d.hd[i][1] > w3.v) w3 = { v: d.hd[i][1], f };
       });
       return h('tr', null, h('td', { class: 'nm' }, h('span', { class: 'row', style: { flexWrap: 'nowrap', gap: '6px' } }, h('span', { class: 'sw', style: { background: m.color } }), m.name)),
         h('td', { class: 'n' }, fmt(d.V[0], 2) + (r.st.mode === 'spl' ? '–' + fmt(Math.max(...d.V), 1) : '') + ' V'),
-        h('td', { class: 'n' }, fmt(wx.v, 2) + ' mm @ ' + fmtHz(wx.f) + (oor ? ' ⚠' : '')),
+        h('td', { class: 'n' }, fmt(wx.v, 2) + ' mm @ ' + fmtHz(wx.f) + (oor ? ' ⚠' : oof ? ' †' : '')),
         h('td', { class: 'n' }, fmt(wdc.v, 3) + ' mm @ ' + fmtHz(wdc.f || 0)),
         h('td', { class: 'n' }, fmtRatio(w2.v, st.unit) + ' @ ' + fmtHz(w2.f)),
         h('td', { class: 'n' }, fmtRatio(w3.v, st.unit) + ' @ ' + fmtHz(w3.f)));
@@ -158,6 +158,7 @@ App.views.distortion = (() => {
     tableHost.innerHTML = '';
     tableHost.append(h('table', { class: 't' }, h('thead', null, h('tr', null, h('th', null, 'Setup'), h('th', { class: 'n' }, 'Drive'), h('th', { class: 'n' }, 'Peak excursion'), h('th', { class: 'n' }, 'Largest DC offset'), h('th', { class: 'n' }, 'Worst H2'), h('th', { class: 'n' }, 'Worst H3'))), h('tbody', null, rows)));
     if (r.data.some((d) => d.ways.some((ws) => ws.some((w) => w.outOfRange)))) tableHost.append(h('p', { class: 'hint', style: { marginTop: '8px' } }, '⚠ The voice coil left the displacement range covered by the driver\'s measured curves; beyond that range the curves are extended with their end slopes, so treat those points as rough.'));
+    else if (r.data.some((d) => d.ways.some((ws) => ws.some((w) => w.outOfFit)))) tableHost.append(h('p', { class: 'hint', style: { marginTop: '8px' } }, '† The voice coil went beyond Klippel\'s fit range ±xp but stayed inside the plotted curves. There the curves rest on less than 1 % of the measurement, so treat those points with some care.'));
     const unsettled = [];
     r.data.forEach((d, k) => (d.converged || []).forEach((c, i) => { if (c === false) unsettled.push(r.meta[k].name + ' ' + fmtHz(d.f[i])); }));
     if (unsettled.length) tableHost.append(h('p', { class: 'hint', style: { marginTop: '8px' } }, '⚠ The simulation had not reached a steady state at ' + unsettled.join(', ') + ' (a very lightly damped setup, such as current drive or a high-Q passive radiator, whose start-up transient outlasts the settling limit). Low-level harmonics there may be off; the fundamental and H2 are usually still right.'));

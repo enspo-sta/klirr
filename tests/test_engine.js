@@ -215,5 +215,30 @@ const dB = (x) => 20 * Math.log10(x);
     check(Math.abs(h2[0] - out[1][1][0]) < 0.1, `T10 Le ${Le} mH moves H2 at 50 Hz by more than 0.1 dB from Le 0.005 mH`);
   }
 }
+// ---------- T11: the Guide's limits table against the published limits and the engine
+{
+  log('T11 Guide table "Pixel extraction checked against published limits"');
+  const fs = require('fs'), path = require('path');
+  const lib = require('../library.json'), pub = require('../research/erin/limits.json').pages;
+  const html = fs.readFileSync(path.join(__dirname, '..', 'src', 'template.html'), 'utf8');
+  const sec = html.slice(html.indexOf('Pixel extraction checked against published limits'), html.indexOf('Simulation against measured distortion'));
+  const clean = (t) => t.replace(/&gt;/g, '>').trim();
+  const rows = [...sec.matchAll(/<tr><td>([^<]+)<\/td><td class="n">([^<]+)<\/td><td class="n">([^<]+)<\/td><td class="n">([^<]+)<\/td><\/tr>/g)];
+  check(rows.length === 9, `T11 expected 9 rows in the Guide's limits table, found ${rows.length}`);
+  const crit = [['xbl82', 'Bl min=82%'], ['xc75', 'C min=75%'], ['xl10', 'Z max=10 %']];
+  for (const [, label, ...cells] of rows) {
+    const d = lib.find((x) => x.label === label); check(!!d, `T11 no library driver labelled ${label}`); if (!d) continue;
+    const page = Object.values(pub).find((p) => p.url === d.sources[0].url); check(!!page, `T11 no published limits for ${label}`); if (!page) continue;
+    const lim = API.driverSummary(d).lim;
+    crit.forEach(([key, c], j) => {
+      const [g, k] = clean(cells[j]).split(' / ');
+      const p = page.limits.find((q) => q.criterion === c);
+      const v = lim[key]; const klirr = (v.beyond ? '>' : '') + v.x.toFixed(1);
+      check(p && p.value_mm === g, `T11 ${label} ${c}: the Guide says ${g} published, research/erin/limits.json says ${p && p.value_mm}`);
+      check(klirr === k, `T11 ${label} ${c}: the Guide says Klirr ${k}, the engine gives ${klirr}`);
+    });
+  }
+  log(`   ${rows.length} drivers checked`);
+}
 log('total time', Date.now() - t0, 'ms');
 if (failures.length) { log(failures.length + ' check(s) failed'); process.exit(1); } else log('all checks passed');
