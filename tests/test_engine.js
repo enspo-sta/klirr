@@ -240,5 +240,30 @@ const dB = (x) => 20 * Math.log10(x);
   }
   log(`   ${rows.length} drivers checked`);
 }
+// ---------- T12: the three stiffness options
+{
+  log('T12 suspension stiffness: table (default), offset and curve');
+  const lib = require('../library.json');
+  for (const id of ['eac-ptt8', 'eac-ss18wu']) {
+    const base = lib.find((x) => x.id === id);
+    const cd = {}; for (const v of ['table', 'offset', 'curve']) { const d = clone(base); d.abs = { kms: v }; cd[v] = API.compileDriver(d); }
+    const T = cd.table.tab, k = (c, xm) => { const i = Math.round((xm * 1e-3 - c.tab.x0) * c.tab.inv); return c.tab.F[i] / (c.tab.x0 + i / c.tab.inv); }; // stiffness F/x in N/m
+    const kT = cd.table.ts.Kms, kC = cd.curve.ts.Kms; // values at rest: the small-signal table, and the curve's Kms(0)
+    check(Math.abs(cd.offset.ts.Kms - kT) < 1e-9 && Math.abs(kC / kT - cd.table.curves.kms.y0 * 1e3 / kT) < 1e-9, `T12 ${id}: values at rest`);
+    const rows = [];
+    for (const xm of [-6, -3, 3, 6]) {
+      const want = { table: kT * cd.table.r.kms(xm), offset: kT + kC * (cd.table.r.kms(xm) - 1), curve: kC * cd.table.r.kms(xm) };
+      for (const v of ['table', 'offset', 'curve']) check(Math.abs(k(cd[v], xm) / want[v] - 1) < 2e-3, `T12 ${id} ${v} at ${xm} mm: ${k(cd[v], xm).toFixed(0)} N/m, expected ${want[v].toFixed(0)}`);
+      rows.push(`${xm} mm ${['table', 'offset', 'curve'].map((v) => (k(cd[v], xm) / 1e3).toFixed(3)).join(' / ')}`);
+    }
+    log(`   ${id} stiffness N/mm table / offset / curve: ${rows.join(', ')}`);
+    // Klippel's compliance limits use the curve's own shape, whichever option the simulation uses
+    const lims = ['table', 'offset', 'curve'].map((v) => { const d = clone(base); d.abs = { kms: v }; return API.driverSummary(d).lim.xc75.x; });
+    check(lims.every((x) => Math.abs(x - lims[0]) < 1e-9), `T12 ${id}: X_C changes with the stiffness option (${lims.join(', ')})`);
+    // the offset option keeps the small-signal linear response
+    const lin = ['table', 'offset'].map((v) => { const d = clone(base); d.abs = { kms: v }; return API.linearCurves(setupOf(d), [20, 40, 100]).spl; });
+    check(lin[0].every((s, i) => Math.abs(s - lin[1][i]) < 1e-9), `T12 ${id}: the offset option changes the linear response`);
+  }
+}
 log('total time', Date.now() - t0, 'ms');
 if (failures.length) { log(failures.length + ' check(s) failed'); process.exit(1); } else log('all checks passed');

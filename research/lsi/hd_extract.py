@@ -44,8 +44,9 @@ def robust(ps, tf=lambda v: v):
 
 def extract(cfg, outdir):
     im = load(cfg['file']); a = np.array(im).astype(int); H, W, _ = a.shape
-    vl, _ = gridlines(a, 'v', 0.2); hl, _ = gridlines(a, 'h', 0.2)
-    left = min(vl)
+    frac = cfg.get('grid_frac', 0.2)  # the 2020 charts draw dotted minor gridlines; a higher threshold keeps only the major ones
+    vl, _ = gridlines(a, 'v', frac); hl, _ = gridlines(a, 'h', frac)
+    left = cfg.get('left', min(vl))  # pixel column of the plot's left edge, where the y labels end
     yt = cfg['yticks']; xt = cfg['xticks']
     yl = []
     for gy in hl:

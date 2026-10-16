@@ -33,6 +33,11 @@ voltages printed on his intermodulation charts, it lands within about 4 dB on av
 below 150 Hz, PTT6.5X below 60 Hz). It reads 5 to 30 dB low where the motor is very linear, as on the PTT8. Mechanisms
 the model leaves out (current-dependent inductance, eddy currents, suspension creep and hysteresis) are candidates for
 that gap, as are differences between samples; none of them has been tested here.
+The suspension stiffness is a modelling choice with a large effect: Klippel's large-signal curve puts it at rest at
+37 to 59 % of the small-signal table. By default Klirr scales the curve's shape to the small-signal value; Setups also
+offers the curve as measured and the small-signal value plus the curve's change. On five drivers that played no part
+in choosing the default, at six levels each, the default has the smallest bias at high level, and the three options'
+mean absolute errors lie within 0.8 dB of each other.
 The Guide tab in the app has the full validation tables and sources.
 
 ## Working on it

@@ -51,7 +51,7 @@ function engineSetup(s) {
     ways: s.ways.map((w, i) => {
       const d = driverFor(w.driverId);
       if (!d) throw new Error('Setup "' + s.name + '" uses a driver that is no longer in the library. Pick another driver in Setups.');
-      const drv = Object.assign({}, d, { abs: { kms: w.kmsSource === 'curve' ? 'curve' : 'table' } });
+      const drv = Object.assign({}, d, { abs: { kms: w.kmsSource === 'curve' || w.kmsSource === 'offset' ? w.kmsSource : 'table' } });
       return { driver: drv, count: w.count || 1, enclosure: w.enclosure || { type: 'ib' }, filters: w.filters || [], gainDb: +w.gainDb || 0, invert: !!w.invert, delayMs: +w.delayMs || 0, dT: +w.dT || 0, Rs: +w.Rs || 0, drive: w.drive || 'voltage', label: (s.ways.length > 1 ? 'Way ' + (i + 1) + ': ' : '') + d.label };
     }),
   };

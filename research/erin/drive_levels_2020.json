@@ -1,0 +1,374 @@
+{
+ "about": "Drive levels for the harmonic distortion charts in Erin's Audio Corner's 2020 driver reviews. Each chart is an animated GIF with one frame per level; each frame's title gives the level as the average SPL at 1 m over a stated band, and no voltage. The multitone charts of the same reviews (Test 1, midwoofer) list each drive voltage with its level on the same band, which fixes the level at 1 V; a frame's voltage is then 10^((level − level at 1 V)/20) V. A second check: the reviews say the first intermodulation test is always at 2.83 V, and its chart's level equals the 1 V level plus 9.03 dB within 0.4 dB on all five. The titles are whole decibels, so each voltage carries ±0.5 dB. Titles and legends were read by OCR (tesseract) and checked against those two relations.",
+ "retrieved": "2026-10-16",
+ "drivers": {
+  "eac-ptt4w": {
+   "page": "https://erinsaudiocorner.com/driveunits/purifi_4/",
+   "hd_chart": "https://erinsaudiocorner.com/images/Reviews/Drivers/Purifi/Purifi_PTT4.0W04-01A/Purifi%20PTT4.0W04-01A_HD.gif",
+   "hd_frames": [
+    {
+     "frame": 0,
+     "name": "ptt4w_hd2020_f0",
+     "title": "Purifi PTT4.0W04-01A: Relative Harmonic Distortion 77dB (Average from 300 - 3000Hz)",
+     "level_db": 77,
+     "V": 1.365
+    },
+    {
+     "frame": 1,
+     "name": "ptt4w_hd2020_f1",
+     "title": "Purifi PTT4.0W04-01A: Relative Harmonic Distortion 83dB (Average from 300 - 3000Hz)",
+     "level_db": 83,
+     "V": 2.723
+    },
+    {
+     "frame": 2,
+     "name": "ptt4w_hd2020_f2",
+     "title": "Purifi PTT4.0W04-01A: Relative Harmonic Distortion 89dB (Average from 300 - 3000Hz)",
+     "level_db": 89,
+     "V": 5.433
+    },
+    {
+     "frame": 3,
+     "name": "ptt4w_hd2020_f3",
+     "title": "Purifi PTT4.0W04-01A: Relative Harmonic Distortion 91dB (Average from 300 - 3000Hz)",
+     "level_db": 91,
+     "V": 6.839
+    },
+    {
+     "frame": 4,
+     "name": "ptt4w_hd2020_f4",
+     "title": "Purifi PTT4.0W04-01A: Relative Harmonic Distortion 93dB (Average from 300 - 3000Hz)",
+     "level_db": 93,
+     "V": 8.61
+    },
+    {
+     "frame": 5,
+     "name": "ptt4w_hd2020_f5",
+     "title": "Purifi PTT4.0W04-01A: Relative Harmonic Distortion 95dB (Average from 300 - 3000Hz)",
+     "level_db": 95,
+     "V": 10.839
+    }
+   ],
+   "band": "300 - 3000Hz",
+   "multitone_chart": "https://erinsaudiocorner.com/images/Reviews/Drivers/Purifi/Purifi_PTT4.0W04-01A/Purifi%20PTT4.0W04-01A_MTON_Distortion%201.png",
+   "multitone_legend_db": {
+    "1": 74.3,
+    "2": 80.4,
+    "3": 83.9,
+    "4": 86.4,
+    "5": 88.3,
+    "6": 89.9,
+    "7": 91.2,
+    "8": 92.4,
+    "9": 93.4,
+    "10": 94.3,
+    "11": 95.2,
+    "12": 95.9,
+    "13": 96.6
+   },
+   "level_at_1V_db": 74.3,
+   "imd_chart": "https://erinsaudiocorner.com/images/Reviews/Drivers/Purifi/Purifi_PTT4.0W04-01A/Purifi%20PTT4.0W04-01A_IMD_Fs.gif",
+   "imd_first_frame": {
+    "title": "Purifi PTT4.0W04-01A: Modulation Distortion 83dB (Average from 300 - 3000Hz)",
+    "level_db": 83,
+    "stated_voltage": 2.83,
+    "bass_tone_hz": 45,
+    "implied_level_db": 83.34
+   }
+  },
+  "eac-sb17cac": {
+   "page": "https://erinsaudiocorner.com/driveunits/sbacoustics_sb17cac35-4/",
+   "hd_chart": "https://erinsaudiocorner.com/images/Reviews/Drivers/SB_Acoustics/SB17CAC35-4/SB%20Acoustics%20SB17CAC35-4_HD.gif",
+   "hd_frames": [
+    {
+     "frame": 0,
+     "name": "sb17cac_hd2020_f0",
+     "title": "SB Acoustics SB17CAC35-4: Relative Harmonic Distortion 83dB (Average from 300 - 1000Hz)",
+     "level_db": 83,
+     "V": 1.396
+    },
+    {
+     "frame": 1,
+     "name": "sb17cac_hd2020_f1",
+     "title": "SB Acoustics SB17CAC35-4: Relative Harmonic Distortion 89dB (Average from 300 - 1000Hz)",
+     "level_db": 89,
+     "V": 2.786
+    },
+    {
+     "frame": 2,
+     "name": "sb17cac_hd2020_f2",
+     "title": "SB Acoustics SB17CAC35-4: Relative Harmonic Distortion 95dB (Average from 300 - 1000Hz)",
+     "level_db": 95,
+     "V": 5.559
+    },
+    {
+     "frame": 3,
+     "name": "sb17cac_hd2020_f3",
+     "title": "SB Acoustics SB17CAC35-4: Relative Harmonic Distortion 97dB (Average from 300 - 1000Hz)",
+     "level_db": 97,
+     "V": 6.998
+    },
+    {
+     "frame": 4,
+     "name": "sb17cac_hd2020_f4",
+     "title": "SB Acoustics SB17CAC35-4: Relative Harmonic Distortion 99dB (Average from 300 - 1000Hz)",
+     "level_db": 99,
+     "V": 8.81
+    },
+    {
+     "frame": 5,
+     "name": "sb17cac_hd2020_f5",
+     "title": "SB Acoustics SB17CAC35-4: Relative Harmonic Distortion 101dB (Average from 300 - 1000Hz)",
+     "level_db": 101,
+     "V": 11.092
+    }
+   ],
+   "band": "300 - 1000Hz",
+   "multitone_chart": "https://erinsaudiocorner.com/images/Reviews/Drivers/SB_Acoustics/SB17CAC35-4/SB%20Acoustics%20SB17CAC35-4_MTON_Distortion%201.png",
+   "multitone_legend_db": {
+    "1": 80.1,
+    "2": 86.1,
+    "3": 89.6,
+    "4": 92.1,
+    "5": 94,
+    "6": 95.6,
+    "7": 97,
+    "8": 98.1,
+    "9": 99.2,
+    "10": 100.1,
+    "11": 100.9
+   },
+   "level_at_1V_db": 80.1,
+   "imd_chart": "https://erinsaudiocorner.com/images/Reviews/Drivers/SB_Acoustics/SB17CAC35-4/SB%20Acoustics%20SB17CAC35-4_IMD_Fs.gif",
+   "imd_first_frame": {
+    "title": "SB Acoustics SB17CAC35-4: Modulation Distortion 89dB (Average from 300 - 1000Hz)",
+    "level_db": 89,
+    "stated_voltage": 2.83,
+    "bass_tone_hz": 44,
+    "implied_level_db": 89.14
+   }
+  },
+  "eac-ptt65w": {
+   "page": "https://erinsaudiocorner.com/driveunits/purifi_ptt65w04/",
+   "hd_chart": "https://erinsaudiocorner.com/images/Reviews/Drivers/Purifi/Purifi_PTT65W04/Purifi%20PTT6.5W04_HD.gif",
+   "hd_frames": [
+    {
+     "frame": 0,
+     "name": "ptt65w_hd2020_f0",
+     "title": "Purifi PTT6.5W04: Relative Harmonic Distortion 82dB (Average from 300 - 1000Hz)",
+     "level_db": 82,
+     "V": 1.396
+    },
+    {
+     "frame": 1,
+     "name": "ptt65w_hd2020_f1",
+     "title": "Purifi PTT6.5W04: Relative Harmonic Distortion 88dB (Average from 300 - 1000Hz)",
+     "level_db": 88,
+     "V": 2.786
+    },
+    {
+     "frame": 2,
+     "name": "ptt65w_hd2020_f2",
+     "title": "Purifi PTT6.5W04: Relative Harmonic Distortion 94dB (Average from 300 - 1000Hz)",
+     "level_db": 94,
+     "V": 5.559
+    },
+    {
+     "frame": 3,
+     "name": "ptt65w_hd2020_f3",
+     "title": "Purifi PTT6.5W04: Relative Harmonic Distortion 96dB (Average from 300 - 1000Hz)",
+     "level_db": 96,
+     "V": 6.998
+    },
+    {
+     "frame": 4,
+     "name": "ptt65w_hd2020_f4",
+     "title": "Purifi PTT6.5W04: Relative Harmonic Distortion 98dB (Average from 300 - 1000Hz)",
+     "level_db": 98,
+     "V": 8.81
+    },
+    {
+     "frame": 5,
+     "name": "ptt65w_hd2020_f5",
+     "title": "Purifi PTT6.5W04: Relative Harmonic Distortion 100dB (Average from 300 - 1000Hz)",
+     "level_db": 100,
+     "V": 11.092
+    }
+   ],
+   "band": "300 - 1000Hz",
+   "multitone_chart": "https://erinsaudiocorner.com/images/Reviews/Drivers/Purifi/Purifi_PTT65W04/Purifi%20PTT6.5W04_MTON_Distortion%201.png",
+   "multitone_legend_db": {
+    "1": 79.1,
+    "2": 85.1,
+    "3": 88.6,
+    "4": 91.1,
+    "5": 93,
+    "6": 94.6,
+    "7": 96,
+    "8": 97.1,
+    "9": 98.1,
+    "10": 99.1,
+    "11": 99.9,
+    "12": 100.6
+   },
+   "level_at_1V_db": 79.1,
+   "imd_chart": "https://erinsaudiocorner.com/images/Reviews/Drivers/Purifi/Purifi_PTT65W04/Purifi%20PTT6.5W04_IMD_Fs.gif",
+   "imd_first_frame": {
+    "title": "Purifi PTT6.5W04: Modulation Distortion 88dB (Average from 300 - 1000Hz)",
+    "level_db": 88,
+    "stated_voltage": 2.83,
+    "bass_tone_hz": 30,
+    "implied_level_db": 88.14
+   }
+  },
+  "eac-ss18wu": {
+   "page": "https://erinsaudiocorner.com/driveunits/scanspeak18wu4741t00/",
+   "hd_chart": "https://erinsaudiocorner.com/images/Reviews/Drivers/Scanspeak/18WU4741T-00/ScanSpeak%20Illuminator%2018WU4741T-00_HD.gif",
+   "hd_frames": [
+    {
+     "frame": 0,
+     "name": "ss18wu_hd2020_f0",
+     "title": "ScanSpeak Illuminator 18WU4741T-00: Relative Harmonic Distortion 83dB (Average from 300 - 1000Hz)",
+     "level_db": 83,
+     "V": 1.479
+    },
+    {
+     "frame": 1,
+     "name": "ss18wu_hd2020_f1",
+     "title": "ScanSpeak Illuminator 18WU4741T-00: Relative Harmonic Distortion 89dB (Average from 300 - 1000Hz)",
+     "level_db": 89,
+     "V": 2.951
+    },
+    {
+     "frame": 2,
+     "name": "ss18wu_hd2020_f2",
+     "title": "ScanSpeak Illuminator 18WU4741T-00: Relative Harmonic Distortion 95dB (Average from 300 - 1000Hz)",
+     "level_db": 95,
+     "V": 5.888
+    },
+    {
+     "frame": 3,
+     "name": "ss18wu_hd2020_f3",
+     "title": "ScanSpeak Illuminator 18WU4741T-00: Relative Harmonic Distortion 97dB (Average from 300 - 1000Hz)",
+     "level_db": 97,
+     "V": 7.413
+    },
+    {
+     "frame": 4,
+     "name": "ss18wu_hd2020_f4",
+     "title": "ScanSpeak Illuminator 18WU4741T-00: Relative Harmonic Distortion 99dB (Average from 300 - 1000Hz)",
+     "level_db": 99,
+     "V": 9.333
+    },
+    {
+     "frame": 5,
+     "name": "ss18wu_hd2020_f5",
+     "title": "ScanSpeak Illuminator 18WU4741T-00: Relative Harmonic Distortion 101dB (Average from 300 - 1000Hz)",
+     "level_db": 101,
+     "V": 11.749
+    }
+   ],
+   "band": "300 - 1000Hz",
+   "multitone_chart": "https://erinsaudiocorner.com/images/Reviews/Drivers/Scanspeak/18WU4741T-00/ScanSpeak%20Illuminator%2018WU4741T-00_MTON_Distortion%201.png",
+   "multitone_legend_db": {
+    "1": 79.6,
+    "2": 85.6,
+    "3": 89.2,
+    "4": 91.7,
+    "5": 93.6,
+    "6": 95.2,
+    "7": 96.5,
+    "8": 97.7,
+    "9": 98.7,
+    "10": 99.6,
+    "11": 100.5,
+    "12": 101.2,
+    "13": 101.9
+   },
+   "level_at_1V_db": 79.6,
+   "imd_chart": "https://erinsaudiocorner.com/images/Reviews/Drivers/Scanspeak/18WU4741T-00/ScanSpeak%20Illuminator%2018WU4741T-00_IMD_Fs.gif",
+   "imd_first_frame": {
+    "title": "ScanSpeak Illuminator 18WU4741T-00: Modulation Distortion 89dB (Average from 300 - 1000Hz)",
+    "level_db": 89,
+    "stated_voltage": 2.83,
+    "bass_tone_hz": 40,
+    "implied_level_db": 88.64
+   }
+  },
+  "eac-dynmw182": {
+   "page": "https://erinsaudiocorner.com/driveunits/dyn_mw182/",
+   "hd_chart": "https://erinsaudiocorner.com/images/Reviews/Drivers/Dyn_Audio/MW182/Dyn%20Audio%20MW182_HD.gif",
+   "hd_frames": [
+    {
+     "frame": 0,
+     "name": "dynmw182_hd2020_f0",
+     "title": "Dyn Audio MW182: Relative Harmonic Distortion 82dB (Average from 40 - 300Hz)",
+     "level_db": 82,
+     "V": 1.413
+    },
+    {
+     "frame": 1,
+     "name": "dynmw182_hd2020_f1",
+     "title": "Dyn Audio MW182: Relative Harmonic Distortion 88dB (Average from 40 - 300Hz)",
+     "level_db": 88,
+     "V": 2.818
+    },
+    {
+     "frame": 2,
+     "name": "dynmw182_hd2020_f2",
+     "title": "Dyn Audio MW182: Relative Harmonic Distortion 94dB (Average from 40 - 300Hz)",
+     "level_db": 94,
+     "V": 5.623
+    },
+    {
+     "frame": 3,
+     "name": "dynmw182_hd2020_f3",
+     "title": "Dyn Audio MW182: Relative Harmonic Distortion 96dB (Average from 40 - 300Hz)",
+     "level_db": 96,
+     "V": 7.079
+    },
+    {
+     "frame": 4,
+     "name": "dynmw182_hd2020_f4",
+     "title": "Dyn Audio MW182: Relative Harmonic Distortion 98dB (Average from 40 - 300Hz)",
+     "level_db": 98,
+     "V": 8.913
+    },
+    {
+     "frame": 5,
+     "name": "dynmw182_hd2020_f5",
+     "title": "Dyn Audio MW182: Relative Harmonic Distortion 100dB (Average from 40 - 300Hz)",
+     "level_db": 100,
+     "V": 11.22
+    }
+   ],
+   "band": "40 - 300Hz",
+   "multitone_chart": "https://erinsaudiocorner.com/images/Reviews/Drivers/Dyn_Audio/MW182/Dyn%20Audio%20MW182_MTON_Distortion%201.png",
+   "multitone_legend_db": {
+    "1": 79,
+    "2": 85,
+    "3": 88.5,
+    "4": 91,
+    "5": 92.9,
+    "6": 94.5,
+    "7": 95.9,
+    "8": 97,
+    "9": 98,
+    "10": 99,
+    "11": 99.8,
+    "12": 100.5,
+    "13": 101.2,
+    "14": 101.9
+   },
+   "level_at_1V_db": 79.0,
+   "imd_chart": "https://erinsaudiocorner.com/images/Reviews/Drivers/Dyn_Audio/MW182/Dyn%20Audio%20MW182_IMD_Fs.gif",
+   "imd_first_frame": {
+    "title": "Dyn Audio MW182: Modulation Distortion 88dB (Average from 40 - 300Hz)",
+    "level_db": 88,
+    "stated_voltage": 2.83,
+    "bass_tone_hz": 40,
+    "implied_level_db": 88.04
+   }
+  }
+ }
+}

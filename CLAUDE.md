@@ -34,7 +34,7 @@ top-level functions are shared between them.
 
 ```bash
 python3 build.py              # build dist/
-npm test                      # engine checks, API smoke test, measured comparison, independent reference (about 30 s, no browser)
+npm test                      # engine checks, API smoke test, measured comparisons, independent reference (about 45 s, no browser)
 npm install                   # once, for the browser tests
 npm run test:browser          # build, then four Playwright runs; screenshots land in shots/
 python3 build_library.py      # regenerate library.json from research/
@@ -53,7 +53,7 @@ and the `tesseract` program.
 
 ## Rules
 
-- **The Guide's numbers are checked.** `tests/test_engine.js` and `tests/cmp_erin.js` fail when the engine no longer
+- **The Guide's numbers are checked.** `tests/test_engine.js`, `tests/cmp_erin.js` and `tests/cmp_erin2020.js` fail when the engine no longer
   reproduces the validation tables in the Guide (`src/template.html`). If a change is intended, rerun them and
   update the Guide's tables and their check values together, in the same commit.
 - **Measurement first.** Driver curves come from measurements: Klippel LSI coefficients, or pixel extraction

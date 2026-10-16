@@ -186,6 +186,10 @@
     ts.KmsTable = kTable; ts.BlTable = blTable;
     const der = derived(ts);
     const rBl = cBl ? cBl.r : () => 1, rK = cK ? cK.r : () => 1, rL = cL ? cL.r : () => 1;
+    // 'offset' keeps the small-signal stiffness at rest and adds the curve's measured change in N/m, Kms(x) = Kms + Kc(x) − Kc(0),
+    // instead of scaling the curve's shape. The limits still use the curve's own shape (rK), as Klippel defines them.
+    const kOff = abs.kms === 'offset' && cK && D.nl.kms.type !== 'param' ? cK.y0 * 1e3 / ts.Kms : null;
+    const rKf = kOff ? (xm) => 1 + kOff * (rK(xm) - 1) : rK;
     // data range (mm) used for warnings
     const rng = [cBl, cK, cL].filter(Boolean).map((c) => [c.lo, c.hi]).filter((r) => isFinite(r[0]) && isFinite(r[1]));
     let dataLo = -Infinity, dataHi = Infinity;
@@ -198,7 +202,7 @@
     for (let k = 0; k < N; k++) {
       const xm = x0 + k * dx, x = xm * 1e-3;
       tBl[k] = ts.Bl * rBl(xm);
-      tF[k] = ts.Kms * rK(xm) * x;
+      tF[k] = ts.Kms * rKf(xm) * x;
       tL[k] = rL(xm);
     }
     for (let k = 0; k < N; k++) { // derivative of the inductance ratio per metre
