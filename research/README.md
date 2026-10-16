@@ -11,6 +11,7 @@ Everything `build_library.py` reads to make `library.json`.
 | `lsi/sources.json` | Image file name to original URL, for every image the configs name. |
 | `lsi/fetch_sources.py` | Downloads those images into `lsi/images/` (not committed). |
 | `lsi/out/`, `lsi/outc/`, `lsi/outhd/` | Extraction results: points plus the axis calibration of every curve (tick pixel positions, largest residual). |
+| `reference/hb.py`, `reference/run_reference.py`, `reference/reference.json` | An independent harmonic-balance solver of the same model (frequency domain, Newton iteration, no time stepping) and its solution of 26 cases: infinite baffle, sealed, vented, passive radiator, current drive, both stiffness options. `tests/reference_test.js` compares the engine with it; rerun `run_reference.py` (numpy and node) when the built-in curves change. |
 | `lsi/xp_extract.py`, `lsi/xp/fit_ranges.json` | Klippel's fit range ±xp: where each plot draws its curve in black (legend "Xp- < X < Xp+"), measured with the extraction's own axis calibration; per plot and, as the median of the three plots, per driver. |
 | `erin/limits.json` | Klippel's displacement limits as printed in each review's limits table (text). Retrieved 2026-10-15. `tests/test_engine.js` checks the Guide's limits table against it. |
 

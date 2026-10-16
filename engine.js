@@ -416,6 +416,40 @@
     const Zin = cw.drive === 'current' ? cx(NaN) : cdiv(cx(1), i);
     return { i, v, x, Uc, Up, Ur, Ut, pb, Zin, vp: e.Sp ? cscale(Up, 1 / e.Sp) : cx(0), xr: e.Sr ? cdiv(Ur, cscale(s, e.Sr)) : cx(0) };
   }
+  // Slowest decay time of a way's linear model, in seconds, from the sharpest resonance in its cone, port and radiator
+  // responses: a resonance with −3 dB bandwidth B decays with time constant 1/(π·B). Used to size the settling time.
+  function slowestTau(cw) {
+    const qs = (f) => { const r = linearWay(cw, f); return [cabs(r.x), cabs(r.vp), cabs(r.xr)]; };
+    const f0 = 1, f1 = 2000, n = 480, fr = (i) => f0 * Math.pow(f1 / f0, i / n);
+    const grid = []; for (let i = 0; i <= n; i++) grid.push(qs(fr(i)));
+    let tau = 0;
+    for (let q = 0; q < 3; q++) {
+      for (let i = 1; i < n; i++) {
+        const y = grid[i][q]; if (!(y > 0) || y < grid[i - 1][q] || y < grid[i + 1][q]) continue;
+        // golden-section search for the peak inside the bracket
+        let a = fr(i - 1), b = fr(i + 1); const g = 0.381966;
+        let c = a + g * (b - a), d = b - g * (b - a), yc = qs(c)[q], yd = qs(d)[q];
+        for (let it = 0; it < 40; it++) {
+          if (yc > yd) { b = d; d = c; yd = yc; c = a + g * (b - a); yc = qs(c)[q]; } else { a = c; c = d; yc = yd; d = b - g * (b - a); yd = qs(d)[q]; }
+        }
+        const fp = (a + b) / 2, yp = qs(fp)[q], half = yp / Math.SQRT2;
+        // half-power points: step outward on the grid, then bisect
+        const ip = n * Math.log(fp / f0) / Math.log(f1 / f0); // fractional grid index of the peak
+        const edge = (dir) => {
+          let j = dir < 0 ? Math.floor(ip) : Math.ceil(ip), fIn = fp;
+          if (j === ip) j += dir;
+          while (j > 0 && j < n && grid[j][q] >= half) { fIn = fr(j); j += dir; }
+          if (j <= 0 || j >= n) return null;
+          let lo = fIn, hi = fr(j);
+          for (let it = 0; it < 40; it++) { const m = (lo + hi) / 2; if (qs(m)[q] >= half) lo = m; else hi = m; }
+          return (lo + hi) / 2;
+        };
+        const fl = edge(-1), fh = edge(1);
+        if (fl != null && fh != null && fh > fl) tau = Math.max(tau, 1 / (Math.PI * (fh - fl)));
+      }
+    }
+    return tau;
+  }
   // Total response per 1 V RMS at the setup input, including filters. fsDigital: use digital filter response.
   function linearSetup(cs, f, fsDigital) {
     const s = cx(0, TWO_PI * f);
@@ -482,7 +516,13 @@
     this.doppler = !!flags.doppler;
     const X0 = T.x0, INV = T.inv, NT2 = T.n - 2, tBl = T.Bl, tF = T.F, tL = T.L, tdL = T.dL;
     const Bl0 = ts.Bl, K0 = ts.Kms, Le0 = ts.Le, L20 = ts.L2, R20 = ts.R2, Mms = ts.Mms, Rms = ts.Rms, Sd = ts.Sd;
-    const ReE = cw.ReE, ReCold = ts.Re, current = cw.drive === 'current', hasLe = Le0 > 1e-7, hasL2 = L20 > 1e-7 && R20 > 0;
+    // An inductance whose time constant is shorter than the step allows (chooseFs stops at 960 kHz) would make the
+    // explicit RK4 step unstable. Its effect lies far above the audio band, so it is treated as zero instead: the
+    // current then follows the voltage algebraically.
+    const mL = Math.max(0.2, cd.minL), tooFast = (L, R) => R / (L * mL) > 2 * fs;
+    const ReE = cw.ReE, ReCold = ts.Re, current = cw.drive === 'current';
+    const hasL2 = L20 > 1e-7 && R20 > 0 && !tooFast(L20, R20);
+    const hasLe = Le0 > 1e-7 && !tooFast(Le0, ReE + (hasL2 ? R20 : 0));
     const box = e.type !== 'ib', V0 = e.V0, P0 = AIR.P0, G = AIR.gamma, KAP = AIR.kappa;
     const Sp = e.Sp, Map = e.Map, Rp = e.Rp, dragC = 0.5 * AIR.rho * e.xi * e.Sp, vc = e.vc, vw = e.vw;
     const Sr = e.Sr, Mr = e.Mr, Kr = e.Kr, Rr = e.Rr, prX = e.prXlim, prThr = e.prThr, prP = e.prShape;
@@ -723,31 +763,45 @@
   function stats(arr, off, N) { let mn = Infinity, mx = -Infinity, s = 0, s2 = 0; for (let n = 0; n < N; n++) { const v = arr[off + n]; if (v < mn) mn = v; if (v > mx) mx = v; s += v; s2 += v * v; } return { min: mn, max: mx, mean: s / N, rms: Math.sqrt(s2 / N) }; }
 
   // ------------------------------------------------------------------ steady-state runner with convergence check
-  // Runs until two consecutive analysis windows agree, then returns the last window of outputs.
+  // Runs until the probed bins stop changing, then returns the last window of outputs.
+  // A transient that decays by a factor r per window changes the bins by d·r^k from one window to the next and leaves
+  // an error of about d·r/(1−r) in the last one, so a small change alone does not prove a slow decay is over: a window
+  // is accepted when the change is far below the tolerance, or when it is below it and the decay projected from the
+  // last two changes is too. Lightly damped setups (current drive, a high-Q radiator) take more windows; `converged`
+  // is false when opt.maxWindows (default 40) ran out first, or when the slowest decay needs more than SETTLE_MAX to die out.
+  const SETTLE_MAX = 10; // s
   function steadyState(cs, flags, fs, gen, opt) {
     const sim = new SetupSim(cs, flags, fs, { rec: { x: true, i: true, vp: true, xr: true } });
-    const N = opt.N; const settle = Math.max(0, Math.round(opt.settle * fs)) + sim.D;
+    // settle for at least eight of the slowest linear time constants (−70 dB of a start-up transient), up to 10 s
+    if (cs.tauMax === undefined) cs.tauMax = Math.max(0, ...cs.ways.map(slowestTau));
+    const want = 8 * cs.tauMax + 0.15, capped = want > SETTLE_MAX;
+    const N = opt.N; const settle = Math.max(0, Math.round(Math.max(opt.settle, Math.min(want, SETTLE_MAX)) * fs)) + sim.D;
     const probe = opt.probe; // array of bin indices to compare between windows
     // settle
     let left = settle;
     while (left > 0) { const m = Math.min(left, 65536); sim.run(gen, m); left -= m; }
-    let prev = null, last = null, windows = 0;
-    const maxW = opt.maxWindows || 5;
+    let prev = null, prevD = null, last = null, windows = 0, converged = false;
+    const maxW = opt.maxWindows || 40;
     while (windows < maxW) {
       last = sim.run(gen, N); windows++;
       const cur = probe.map((k) => dftBin(last.p, 0, N, k));
       if (prev) {
-        const ref = cabs(cur[0]) || 1e-30; let ok = true;
-        for (let q = 0; q < cur.length; q++) {
-          const a = cabs(cur[q]), b = cabs(prev[q]);
-          const tol = Math.max(ref * 3e-6, 0.003 * Math.max(a, b)); // 0.03 dB or −110 dB re fundamental
-          if (Math.abs(a - b) > tol) { ok = false; break; }
+        const ref = cabs(cur[0]) || 1e-30;
+        const d = cur.map((c, q) => cabs(csub(c, prev[q])));
+        const tol = cur.map((c, q) => Math.max(ref * 3e-6, 0.003 * Math.max(cabs(c), cabs(prev[q])))); // 0.03 dB or −110 dB re fundamental
+        if (d.every((v, q) => v < tol[q] / 30)) converged = true;
+        else if (prevD && d.every((v, q) => v < tol[q])) {
+          converged = d.every((v, q) => {
+            const r = prevD[q] > 0 ? v / prevD[q] : 0;
+            return r < 0.95 && v * r / (1 - r) < tol[q];
+          });
         }
-        if (ok) break;
+        if (converged) break;
+        prevD = d;
       }
       prev = cur;
     }
-    return { out: last, N, windows, maxAbsX: sim.ways.map((w) => w.maxAbsX) };
+    return { out: last, N, windows, converged: converged && !capped, maxAbsX: sim.ways.map((w) => w.maxAbsX) };
   }
 
   // ------------------------------------------------------------------ analyses
@@ -809,7 +863,7 @@
     const P1 = cabs(bins[0]);
     const hd = bins.slice(1).map((b) => cabs(b) / P1);
     const thd = Math.sqrt(hd.reduce((s, v) => s + v * v, 0));
-    return { f: fa, V: Vrms, spl: splOf(P1 / Math.SQRT2), hd, thd, ways: wayStats(r.out, cs, N), windows: r.windows };
+    return { f: fa, V: Vrms, spl: splOf(P1 / Math.SQRT2), hd, thd, ways: wayStats(r.out, cs, N), windows: r.windows, converged: r.converged };
   }
 
   function hdSweep(args, progress) {
@@ -821,13 +875,13 @@
     for (const { setup, cs, list } of plan) {
       const fs = args.fs || chooseFs(cs, Math.max(...freqs) * H / 4);
       const fsIn = 2 * fs;
-      const r = { id: setup.id, fs, f: [], V: [], spl: [], splLin: [], hd: [], thd: [], ways: [], mech: {} };
+      const r = { id: setup.id, fs, f: [], V: [], spl: [], splLin: [], hd: [], thd: [], ways: [], converged: [], mech: {} };
       for (const mm of list) r.mech[mm] = { hd: [], thd: [] };
       for (const f of freqs) {
         const V = levelVoltage(cs, fsIn, args.level, f);
         const lin = splOf(cabs(linearSetup(cs, f, fsIn).p) * V);
         const pt = hdPoint(cs, NL_ALL, fs, f, V, H);
-        r.f.push(pt.f); r.V.push(V); r.spl.push(pt.spl); r.splLin.push(lin); r.hd.push(pt.hd); r.thd.push(pt.thd); r.ways.push(pt.ways);
+        r.f.push(pt.f); r.V.push(V); r.spl.push(pt.spl); r.splLin.push(lin); r.hd.push(pt.hd); r.thd.push(pt.thd); r.ways.push(pt.ways); r.converged.push(pt.converged);
         done++; progress && progress(done / total, { stage: 'all', f });
         for (const mm of list) {
           const q = hdPoint(cs, flagsFor(mm), fs, f, V, H);
@@ -858,7 +912,7 @@
       m1: P(k2 - k1), p1_: P(k2 + k1), m2: P(k2 - 2 * k1), p2_: P(k2 + 2 * k1), m3: P(k2 - 3 * k1), p3_: P(k2 + 3 * k1),
     };
     const d2 = (comp.m1 + comp.p1_) / p2, d3 = (comp.m2 + comp.p2_) / p2;
-    const res = { f1: fa1, f2: fa2, U1, U2, spl1: splOf(p1 / Math.SQRT2), spl2: splOf(p2 / Math.SQRT2), d2, d3, comp, ways: wayStats(r.out, cs, N) };
+    const res = { f1: fa1, f2: fa2, U1, U2, spl1: splOf(p1 / Math.SQRT2), spl2: splOf(p2 / Math.SQRT2), d2, d3, comp, ways: wayStats(r.out, cs, N), converged: r.converged };
     if (wantSpectrum) res.spectrum = spectrumOf(r.out.p, N, fs, Math.min(fs / 2, Math.max(4 * fa2, fa2 + 6 * fa1)));
     return res;
   }
@@ -927,7 +981,7 @@
         for (let n = 0; n < N; n++) re[n] = r.out.p[n];
         fft(re, im);
         const pw = new Float64Array(N / 2); for (let k = 0; k < N / 2; k++) pw[k] = (re[k] * re[k] + im[k] * im[k]) * 2 / (N * N); // mean-square (Pa²) per bin
-        return { pw, ways: wayStats(r.out, cs, N) };
+        return { pw, ways: wayStats(r.out, cs, N), converged: r.converged };
       };
       const analyze = (pw) => {
         const isTone = new Uint8Array(N / 2); for (const k of bins) isTone[k] = 1;
@@ -952,7 +1006,7 @@
         return { bands, totalDb: 10 * Math.log10(Math.max(dd, 1e-300) / tt), tones: tonesOut, dist };
       };
       const all = run(NL_ALL); done++; progress && progress(done / total, { stage: 'all' });
-      const r = Object.assign({ id: setup.id, fs, df, N, nTones: J }, analyze(all.pw), { ways: all.ways, mech: {} });
+      const r = Object.assign({ id: setup.id, fs, df, N, nTones: J }, analyze(all.pw), { ways: all.ways, converged: all.converged, mech: {} });
       if (list.length) for (const mm of list) { const q = run(flagsFor(mm)); const a = analyze(q.pw); r.mech[mm] = { bands: a.bands, totalDb: a.totalDb }; done++; progress && progress(done / total, { stage: mm }); }
       res.push(r);
     }
@@ -973,11 +1027,13 @@
       const r = { id: setup.id, fs, f: [], spl: [], limit: [], splAt: [], details: [] };
       for (const f of args.freqs) {
         const lin = linearSetup(cs, f, fsIn); const splPerV = splOf(cabs(lin.p));
+        // the amplifier sees each way's terminal voltage, after its filters, gain and polarity: |H|·V
+        const gMax = Math.max(1e-12, ...lin.ways.map((w) => cabs(w.H)));
         const evalL = (L) => {
           const V = Math.pow(10, (L - splPerV) / 20);
           const ms = [];
-          if (crit.vmax) ms.push([20 * Math.log10(crit.vmax / V), 'amplifier voltage']);
-          const pt = hdPoint(cs, NL_ALL, fs, f, Math.min(V, crit.vmax ? crit.vmax * 1.2 : V), 5);
+          if (crit.vmax) ms.push([20 * Math.log10(crit.vmax / (gMax * V)), 'amplifier voltage']);
+          const pt = hdPoint(cs, NL_ALL, fs, f, Math.min(V, crit.vmax ? crit.vmax * 1.2 / gMax : V), 5);
           if (crit.thd) ms.push([20 * Math.log10(crit.thd / 100 / Math.max(pt.thd, 1e-12)), 'THD']);
           if (crit.hd3) ms.push([20 * Math.log10(crit.hd3 / 100 / Math.max(pt.hd[1], 1e-12)), 'HD3']);
           if (crit.comp) ms.push([crit.comp - (L - pt.spl), 'compression']);
@@ -1019,7 +1075,7 @@
         else {
           r.spl.push(best.pt.spl); r.splAt.push(best.L);
           r.limit.push(best.L >= hi - 1e-6 ? 'none up to ' + hi + ' dB' : (cur.m < 0 ? cur.why : best.why));
-          r.details.push({ thd: best.pt.thd, hd: best.pt.hd, ways: best.pt.ways, V: best.V, margin: best.m });
+          r.details.push({ thd: best.pt.thd, hd: best.pt.hd, ways: best.pt.ways, V: best.V, Vterm: gMax * best.V, margin: best.m, converged: best.pt.converged });
         }
         done++; progress && progress(done / total, { f });
       }
@@ -1148,7 +1204,7 @@
   }
 
   const API = { linearCurves, hdSweep, imdSweep, multitone, maxSpl, waveform, auralize, driverSummary, displacementLimits, compileDriver, compileSetup, linearSetup, chooseFs, derived, tsOf };
-  const Engine = { AIR, API, util: { fracOctaveFreqs, logspace, splOf, cabs, dftBin, fft, chebFit, chebEval, buildCurve, bilinear, analogResponse, digitalResponse, toneGen, SetupSim, NL_ALL, NL_NONE, flagsFor, steadyState, hdPoint, imdPoint } };
+  const Engine = { AIR, API, util: { slowestTau, fracOctaveFreqs, logspace, splOf, cabs, dftBin, fft, chebFit, chebEval, buildCurve, bilinear, analogResponse, digitalResponse, toneGen, SetupSim, NL_ALL, NL_NONE, flagsFor, steadyState, hdPoint, imdPoint } };
   root.KlirrEngine = Engine;
   if (typeof module !== 'undefined' && module.exports) module.exports = Engine;
 

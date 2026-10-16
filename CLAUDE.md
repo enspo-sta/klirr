@@ -34,14 +34,15 @@ top-level functions are shared between them.
 
 ```bash
 python3 build.py              # build dist/
-npm test                      # engine checks, API smoke test, measured comparison (about 30 s, no browser)
+npm test                      # engine checks, API smoke test, measured comparison, independent reference (about 30 s, no browser)
 npm install                   # once, for the browser tests
 npm run test:browser          # build, then four Playwright runs; screenshots land in shots/
 python3 build_library.py      # regenerate library.json from research/
 npm run serve                 # http://localhost:8000 serves dist/
 ```
 
-Run `npm test` after any change to `engine.js`, `library.json` or `research/`, and `npm run test:browser`
+Run `npm test` after any change to `engine.js`, `library.json` or `research/` (when the built-in curves change, also
+`python3 research/reference/run_reference.py`, which needs numpy, to refresh the independent reference), and `npm run test:browser`
 after any change to `src/`. Look at the screenshots in `shots/` after visual changes.
 
 In a cloud session the network may block the headless-browser download (`npx playwright install chromium`).

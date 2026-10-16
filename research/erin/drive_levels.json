@@ -1,0 +1,27 @@
+{
+  "about": "Drive voltages Erin's Audio Corner prints under the titles of the intermodulation charts (U1, the 30 Hz bass tone's RMS voltage) in the 2022 Purifi reviews. The harmonic distortion charts of the same reviews carry the same level labels (86 and 96 dB at 1 m) but print no voltage; tests/cmp_erin.js assumes they used these voltages. That is an inference from the shared labels, not something the pages state. Each title was read by eye from the chart image.",
+  "retrieved": "2026-10-15",
+  "drivers": {
+    "eac-ptt8": {
+      "page": "https://erinsaudiocorner.com/driveunits/purifi_ptt80x04-nab-02/",
+      "levels": {
+        "86": { "U1": 2.00, "chart": "https://dl.dropboxusercontent.com/s/ze127p64b4dc7ik/IMD_1.png?dl=0", "title": "Purifi PTT8.0X04-NAB-02 - IMD @ 86dB/1m (Bass Tone @ 30Hz) (U1=2 V)" },
+        "96": { "U1": 6.34, "chart": "https://dl.dropboxusercontent.com/s/zhgt4okjtf90rcf/IMD_2.png?dl=0", "title": "Purifi PTT8.0X04-NAB-02 - IMD @ 96dB/1m (Bass Tone @ 30Hz) (U1=6.34 V)" }
+      }
+    },
+    "eac-ptt65x": {
+      "page": "https://erinsaudiocorner.com/driveunits/purifi_ptt6.5x04-naa-08/",
+      "levels": {
+        "86": { "U1": 2.82, "chart": "https://dl.dropboxusercontent.com/s/yx1fmc8l5iplnhk/imd%201.png?dl=0", "title": "PTT6.5X04-NAA-08 - IMD @ 86dB/1m (Bass Tone = 30Hz) (U1=2.82 V)" },
+        "96": { "U1": 8.95, "chart": "https://dl.dropboxusercontent.com/s/hmnj3g107y2505e/imd%202.png?dl=0", "title": "PTT6.5X04-NAA-08 - IMD @ 96dB/1m (Bass Tone = 30Hz) (U1=8.95 V)" }
+      }
+    },
+    "eac-ptt65m": {
+      "page": "https://erinsaudiocorner.com/driveunits/purifi_ptt6.5m-08-nfa-01a/",
+      "levels": {
+        "86": { "U1": 2.25, "chart": "https://dl.dropboxusercontent.com/s/40z37jq1g1ymcf4/imd%201.png?dl=0", "title": "PTT6.5M-08-NFA-01A - IMD @ 86dB/1m (Bass Tone = 30Hz) (U1=2.25 V)" },
+        "96": { "U1": 7.11, "chart": "https://dl.dropboxusercontent.com/s/zlo3h6o3i7y0n0l/imd%202.png?dl=0", "title": "PTT6.5M-08-NFA-01A - IMD @ 96dB/1m (Bass Tone = 30Hz) (U1=7.11 V)" }
+      }
+    }
+  }
+}
