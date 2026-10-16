@@ -3,6 +3,8 @@
 const KE = window.KlirrEngine;
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+// Only web, blob, mail and same-page addresses become links; a javascript: or data: address from an imported file does not.
+function safeUrl(u) { const t = String(u).trim(); return /^(https?:|mailto:|blob:|#)/i.test(t) || !/^[a-z][a-z0-9+.-]*:/i.test(t); }
 function h(tag, attrs, ...kids) {
   const el = document.createElement(tag);
   if (attrs) for (const k in attrs) {
@@ -12,6 +14,7 @@ function h(tag, attrs, ...kids) {
     else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
     else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2), v);
     else if (k === 'text') el.textContent = v;
+    else if ((k === 'href' || k === 'src') && !safeUrl(v)) continue; // links can come from imported files
     else if (v === true) el.setAttribute(k, '');
     else el.setAttribute(k, v);
   }

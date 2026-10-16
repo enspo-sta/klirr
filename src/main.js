@@ -35,8 +35,11 @@ function buildGuideToc() {
       const next = items.slice();
       if (firstDrivers) { // drivers made in this browser before the account store answered are uploaded, not dropped
         firstDrivers = false;
-        for (const d of App.userDrivers) if (!next.some((x) => x.id === d.id)) { next.push(d); Store.save('drivers', d); }
+        // a local driver the account once had but no longer has was deleted on another device: keep it deleted
+        const synced = new Set(Store.local('syncedDrivers') || []);
+        for (const d of App.userDrivers) if (!next.some((x) => x.id === d.id) && !synced.has(d.id)) { next.push(d); Store.save('drivers', d); }
       }
+      Store.local('syncedDrivers', next.map((x) => x.id));
       next.sort((a, b) => String(a.label).localeCompare(String(b.label)));
       if (JSON.stringify(next) === JSON.stringify(App.userDrivers)) return;
       App.userDrivers = next; App._sumCache && App._sumCache.clear(); Store.local('drivers', App.userDrivers);

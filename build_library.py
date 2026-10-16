@@ -39,8 +39,16 @@ META = {
  'ptt4w': ('Purifi', 'PTT4.0W04-01A', 'midwoofer', 4),
  'sb17cac': ('SB Acoustics', 'SB17CAC35-4', 'midwoofer', 6.5),
  'ss18wu': ('ScanSpeak', 'Illuminator 18WU/4741T-00', 'midwoofer', 7),
- 'dynmw182': ('Dynaudio', 'MW182', 'woofer', 8),
+ 'dynmw182': ('Dynaudio', 'MW182', 'woofer', 10),
  'seas': ('SEAS', 'W18NX-001', 'midwoofer', 7),
+}
+EXTRA_SOURCE = {
+ 'dynmw182': [{'sid': 's2', 'publisher': 'Dynaudio', 'title': 'Esotec / Esotar2 Series manual', 'url': 'https://dynaudio.com/hubfs/Car%20Audio/Downloads/esotec_esotar_manual.pdf', 'retrieved': '2026-10-15',
+               'what': 'Frame diameter 239 mm (pages 5 and 8), used only for the size label; no simulation value comes from it.'}],
+}
+EXTRA_NOTE = {
+ 'ptt65m': ['The x axes of the stiffness and inductance plots were calibrated from the order of the detected gridlines, with tick labels read by eye where OCR could not read them (method recorded per axis in research/lsi/outc/extracted.json); every other axis of the nine drivers was read by OCR.'],
+ 'dynmw182': ['Sold and reviewed as a 10-inch woofer (Esotec MW 182). Dynaudio\'s Esotec and Esotar2 manual gives a frame 239 mm across (https://dynaudio.com/hubfs/Car%20Audio/Downloads/esotec_esotar_manual.pdf, pages 5 and 8); the effective piston area of 235 cm², a piston 173 mm across, is the value in the review and in retailers\' copies of the specification.'],
 }
 lib = []
 for key, (brand, model, role, size) in META.items():
@@ -66,11 +74,11 @@ for key, (brand, model, role, size) in META.items():
         'id': 'eac-' + key, 'brand': brand, 'model': model, 'label': f'{brand} {model}', 'role': role, 'size_in': size,
         'badge': 'measured', 'ts': ts, 'nl': nl,
         'sources': [{'sid': 's1', 'publisher': "Erin's Audio Corner", 'title': info['title'], 'url': info['url'], 'retrieved': RET,
-                     'what': 'Small-signal parameters from the review\'s Klippel LPM table (text); Bl(x), Kms(x) and Le(x) pixel-extracted from the review\'s Klippel LSI plots.'}],
+                     'what': 'Small-signal parameters from the review\'s Klippel LPM table (text); Bl(x), Kms(x) and Le(x) pixel-extracted from the review\'s Klippel LSI plots.'}] + EXTRA_SOURCE.get(key, []),
         'extraction': {'method': 'pixel', 'tool': 'OCR-read tick labels paired with detected gridlines, least-squares axis fit (every labelled tick is a check tick, max residual < 1 px), exact-colour mask, per-column continuity tracking, 161-point uniform resample', 'curves': ext,
                        'fit_range': {'xp_mm': xp[key]['xp_mm'], 'how': "Extent of the black segment the Klippel plots draw for the fit range (legend 'Xp- < X < Xp+'), measured with the extraction's axis calibration by research/lsi/xp_extract.py, median of the three plots."}},
         'fitRange': xp[key]['xp_mm'],
-        'notes': ' '.join(note + ['Curves set the shape of each nonlinearity; absolute small-signal values come from the LPM table.']),
+        'notes': ' '.join(note + EXTRA_NOTE.get(key, []) + ['Curves set the shape of each nonlinearity; absolute small-signal values come from the LPM table.']),
     }
     lib.append(d)
 # SB34NRXL75-8: datasheet small-signal parameters; Bl(x) is a geometric estimate
