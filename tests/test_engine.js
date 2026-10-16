@@ -178,5 +178,42 @@ const setupOf = (drv, enc, extra) => ({ id: 's', ways: [Object.assign({ driver: 
     vt.forEach((v, i) => { if (r.limit[i] === 'amplifier voltage') check(v > VMAX * 0.98, `T8 ${name}: stops at ${v.toFixed(1)} V at ${freqs[i]} Hz, short of the ${VMAX} V limit`); });
   }
 }
+// ---------- T9: lightly damped setups reach their steady state, or say they did not
+const dB = (x) => 20 * Math.log10(x);
+{
+  log('T9 steady state in lightly damped setups (current drive, radiator with Qmp 200)');
+  const lib = require('../library.json');
+  const run = (id, enc, f, V, patch) => {
+    const d = clone(lib.find((x) => x.id === id)); Object.assign(d.ts, patch || {});
+    const cs = API.compileSetup({ id: 's', space: 'half', distance: 1, ways: [{ driver: d, count: 1, enclosure: enc, filters: [], drive: 'current' }] });
+    return util.hdPoint(cs, Object.assign({}, util.NL_ALL, { doppler: false }), API.chooseFs(cs, f * 10), f, V, 4);
+  };
+  const PR = { type: 'pr', Vb: 30, pr: { Sd: 235, Mmp: 150, Cmp: 0.6, Qmp: 200, n: 1, xlim: 10, thr: 0.5, shape: 2 } };
+  // reference: an independent harmonic-balance solution of the same equations (audit of 15 October 2026)
+  for (const [id, enc, f, V, ref] of [['eac-ptt8', PR, 36, 0.5, [-56.80, -92.67, -112.14]], ['eac-sb17cac', { type: 'ib' }, 60, 0.6, [-38.12, -41.69, -76.87]]]) {
+    const pt = run(id, enc, f, V); const got = pt.hd.slice(0, 3).map(dB);
+    log(`   ${id} ${f} Hz: H2..H4 ${got.map((v) => v.toFixed(2)).join(' / ')} (reference ${ref.join(' / ')}), ${pt.windows} windows, converged ${pt.converged}`);
+    check(pt.converged === true, `T9 ${id} at ${f} Hz did not report a steady state`);
+    got.forEach((v, k) => check(Math.abs(v - ref[k]) < 0.3, `T9 ${id} at ${f} Hz: H${k + 2} ${v.toFixed(2)} dB, reference ${ref[k]} dB`));
+  }
+  const slow = run('eac-sb17cac', { type: 'ib' }, 60, 0.6, { Rms: 0.00309 }); // Qms near 1400 in current drive: decays over tens of seconds
+  log(`   SB17CAC35-4 with Rms / 100: converged ${slow.converged}`);
+  check(slow.converged === false, 'T9 a setup that cannot settle within the limit was reported as converged');
+}
+// ---------- T10: very small voice-coil inductance stays finite
+{
+  log('T10 voice-coil inductance from 50 µH down to 0.2 µH');
+  const lib = require('../library.json');
+  const out = [0.05, 0.005, 0.002, 0.0005, 0.0002].map((Le) => {
+    const d = clone(lib.find((x) => x.id === 'eac-ptt65m')); d.ts.Le = Le;
+    const r = API.hdSweep({ setups: [setupOf(d)], freqs: [50, 2000], level: { mode: 'voltage', value: 6 }, harmonics: 3, mechanisms: false }, null)[0];
+    return [Le, r.hd.map((h) => dB(h[0]))];
+  });
+  for (const [Le, h2] of out) {
+    log(`   Le ${Le} mH: H2 at 50 / 2000 Hz ${h2.map((v) => v.toFixed(2)).join(' / ')} dB`);
+    check(h2.every(Number.isFinite), `T10 Le ${Le} mH gives a result that is not finite`);
+    check(Math.abs(h2[0] - out[1][1][0]) < 0.1, `T10 Le ${Le} mH moves H2 at 50 Hz by more than 0.1 dB from Le 0.005 mH`);
+  }
+}
 log('total time', Date.now() - t0, 'ms');
 if (failures.length) { log(failures.length + ' check(s) failed'); process.exit(1); } else log('all checks passed');
