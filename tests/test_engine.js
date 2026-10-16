@@ -158,6 +158,26 @@ const setupOf = (drv, enc, extra) => ({ id: 's', ways: [Object.assign({ driver: 
   const r = API.hdSweep({ setups: [setup], freqs: util.fracOctaveFreqs(40, 4000, 3), level: { mode: 'splref', value: 94, fref: 500 }, harmonics: 5, mechanisms: false }, null);
   log(`   HD sweep 21 points: ${Date.now() - t} ms, fs ${r[0].fs}`);
 }
+// ---------- T8: the amplifier limit applies to the voltage at the driver terminals, after filters and gain
+{
+  log('T8 maximum level: amplifier limit at the driver terminals (Linkwitz transform, way gain)');
+  const VMAX = 40;
+  const cases = [
+    ['no filters', { filters: [] }],
+    ['Linkwitz transform 50 → 20 Hz', { filters: [{ type: 'lt', f0: 50, q0: 0.707, fp: 20, qp: 0.707 }] }],
+    ['+6 dB way gain', { filters: [], gainDb: 6 }],
+  ];
+  for (const [name, extra] of cases) {
+    const setup = setupOf(PTT8, { type: 'sealed', Vb: 15 }, extra);
+    const freqs = [20, 30, 50, 100];
+    const r = API.maxSpl({ setups: [setup], freqs, criteria: { vmax: VMAX } }, null)[0];
+    const lc = API.linearCurves(setup, freqs);
+    const vt = r.details.map((d, i) => d ? d.V * lc.ways[0].volt[i] : NaN);
+    log(`   ${name}: terminal V at 20/30/50/100 Hz ${vt.map((v) => v.toFixed(1)).join(' / ')}; limit ${r.limit.join(', ')}`);
+    vt.forEach((v, i) => check(v <= VMAX * 1.001, `T8 ${name}: ${v.toFixed(1)} V reaches the driver at ${freqs[i]} Hz with a ${VMAX} V limit`));
+    vt.forEach((v, i) => { if (r.limit[i] === 'amplifier voltage') check(v > VMAX * 0.98, `T8 ${name}: stops at ${v.toFixed(1)} V at ${freqs[i]} Hz, short of the ${VMAX} V limit`); });
+  }
+}
 // ---------- T9: lightly damped setups reach their steady state, or say they did not
 const dB = (x) => 20 * Math.log10(x);
 {

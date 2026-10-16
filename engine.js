@@ -1018,11 +1018,13 @@
       const r = { id: setup.id, fs, f: [], spl: [], limit: [], splAt: [], details: [] };
       for (const f of args.freqs) {
         const lin = linearSetup(cs, f, fsIn); const splPerV = splOf(cabs(lin.p));
+        // the amplifier sees each way's terminal voltage, after its filters, gain and polarity: |H|·V
+        const gMax = Math.max(1e-12, ...lin.ways.map((w) => cabs(w.H)));
         const evalL = (L) => {
           const V = Math.pow(10, (L - splPerV) / 20);
           const ms = [];
-          if (crit.vmax) ms.push([20 * Math.log10(crit.vmax / V), 'amplifier voltage']);
-          const pt = hdPoint(cs, NL_ALL, fs, f, Math.min(V, crit.vmax ? crit.vmax * 1.2 : V), 5);
+          if (crit.vmax) ms.push([20 * Math.log10(crit.vmax / (gMax * V)), 'amplifier voltage']);
+          const pt = hdPoint(cs, NL_ALL, fs, f, Math.min(V, crit.vmax ? crit.vmax * 1.2 / gMax : V), 5);
           if (crit.thd) ms.push([20 * Math.log10(crit.thd / 100 / Math.max(pt.thd, 1e-12)), 'THD']);
           if (crit.hd3) ms.push([20 * Math.log10(crit.hd3 / 100 / Math.max(pt.hd[1], 1e-12)), 'HD3']);
           if (crit.comp) ms.push([crit.comp - (L - pt.spl), 'compression']);
@@ -1064,7 +1066,7 @@
         else {
           r.spl.push(best.pt.spl); r.splAt.push(best.L);
           r.limit.push(best.L >= hi - 1e-6 ? 'none up to ' + hi + ' dB' : (cur.m < 0 ? cur.why : best.why));
-          r.details.push({ thd: best.pt.thd, hd: best.pt.hd, ways: best.pt.ways, V: best.V, margin: best.m, converged: best.pt.converged });
+          r.details.push({ thd: best.pt.thd, hd: best.pt.hd, ways: best.pt.ways, V: best.V, Vterm: gMax * best.V, margin: best.m, converged: best.pt.converged });
         }
         done++; progress && progress(done / total, { f });
       }
