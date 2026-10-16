@@ -28,9 +28,11 @@ importing a driver database file whose harmonic distortion measurements become o
 
 ## How far to trust it
 
-The model covers the excursion-driven nonlinearities. Against Erin's measured distortion at 96 dB it lands within
-about 4 dB where those dominate (PTT6.5M below 150 Hz, PTT6.5X below 60 Hz) and reads 5 to 30 dB low where the motor
-is very linear, as on the PTT8, because current-dependent inductance, eddy currents and hysteresis are not modelled.
+The model covers the excursion-driven nonlinearities. Against Erin's measured distortion at 96 dB, driven at the
+voltages printed on his intermodulation charts, it lands within about 4 dB on average where those dominate (PTT6.5M
+below 150 Hz, PTT6.5X below 60 Hz). It reads 5 to 30 dB low where the motor is very linear, as on the PTT8. Mechanisms
+the model leaves out (current-dependent inductance, eddy currents, suspension creep and hysteresis) are candidates for
+that gap, as are differences between samples; none of them has been tested here.
 The Guide tab in the app has the full validation tables and sources.
 
 ## Working on it

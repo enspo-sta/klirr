@@ -1,0 +1,271 @@
+{
+ "about": "Klippel displacement limits as printed in each review's limits table (text, not image), columns: parameter, criterion, value in mm. A value written '>' means Klippel did not reach the threshold inside its fit range ±xp and printed the range's shorter side.",
+ "retrieved": "2026-10-15",
+ "pages": {
+  "purifi_ptt80x04-nab-02": {
+   "url": "https://erinsaudiocorner.com/driveunits/purifi_ptt80x04-nab-02/",
+   "limits": [
+    {
+     "parameter": "Bl",
+     "criterion": "Bl min=82%",
+     "value_mm": ">8.8"
+    },
+    {
+     "parameter": "C",
+     "criterion": "C min=75%",
+     "value_mm": "6.0"
+    },
+    {
+     "parameter": "L",
+     "criterion": "Z max=10 %",
+     "value_mm": ">8.8"
+    },
+    {
+     "parameter": "d",
+     "criterion": "d2=10%",
+     "value_mm": "46.6"
+    },
+    {
+     "parameter": "Bl",
+     "criterion": "Bl min=70%",
+     "value_mm": ">8.8"
+    },
+    {
+     "parameter": "C",
+     "criterion": "C min=50%",
+     "value_mm": "7.8"
+    },
+    {
+     "parameter": "L",
+     "criterion": "Z max=17 %",
+     "value_mm": ">8.8"
+    },
+    {
+     "parameter": "d",
+     "criterion": "d2=17%",
+     "value_mm": "93.2"
+    }
+   ]
+  },
+  "purifi_ptt6.5x04-naa-08": {
+   "url": "https://erinsaudiocorner.com/driveunits/purifi_ptt6.5x04-naa-08/",
+   "limits": [
+    {
+     "parameter": "Bl",
+     "criterion": "Bl min=82%",
+     "value_mm": ">8.7"
+    },
+    {
+     "parameter": "C",
+     "criterion": "C min=75%",
+     "value_mm": "5.0"
+    },
+    {
+     "parameter": "L",
+     "criterion": "Z max=10 %",
+     "value_mm": ">8.7"
+    },
+    {
+     "parameter": "d",
+     "criterion": "d2=10%",
+     "value_mm": "36.1"
+    },
+    {
+     "parameter": "Bl",
+     "criterion": "Bl min=70%",
+     "value_mm": ">8.7"
+    },
+    {
+     "parameter": "C",
+     "criterion": "C min=50%",
+     "value_mm": "7.6"
+    },
+    {
+     "parameter": "L",
+     "criterion": "Z max=17 %",
+     "value_mm": ">8.7"
+    },
+    {
+     "parameter": "d",
+     "criterion": "d2=17%",
+     "value_mm": "61.4"
+    }
+   ]
+  },
+  "purifi_ptt6.5m-08-nfa-01a": {
+   "url": "https://erinsaudiocorner.com/driveunits/purifi_ptt6.5m-08-nfa-01a/",
+   "limits": [
+    {
+     "parameter": "Bl",
+     "criterion": "Bl min=82%",
+     "value_mm": "3.3"
+    },
+    {
+     "parameter": "C",
+     "criterion": "C min=75%",
+     "value_mm": "5.1"
+    },
+    {
+     "parameter": "L",
+     "criterion": "Z max=10 %",
+     "value_mm": ">5.8"
+    },
+    {
+     "parameter": "d",
+     "criterion": "d2=10%",
+     "value_mm": "19.3"
+    }
+   ]
+  },
+  "purifi_ptt65w04": {
+   "url": "https://erinsaudiocorner.com/driveunits/purifi_ptt65w04/",
+   "limits": [
+    {
+     "parameter": "Bl",
+     "criterion": "Bl min=82%",
+     "value_mm": "9.1"
+    },
+    {
+     "parameter": "C",
+     "criterion": "C min=75%",
+     "value_mm": "6.9"
+    },
+    {
+     "parameter": "L",
+     "criterion": "Z max=10 %",
+     "value_mm": ">11.2"
+    },
+    {
+     "parameter": "d",
+     "criterion": "d2=10%",
+     "value_mm": "42.1"
+    }
+   ]
+  },
+  "purifi_4": {
+   "url": "https://erinsaudiocorner.com/driveunits/purifi_4/",
+   "limits": [
+    {
+     "parameter": "Bl",
+     "criterion": "Bl min=82%",
+     "value_mm": ">7.6"
+    },
+    {
+     "parameter": "C",
+     "criterion": "C min=75%",
+     "value_mm": "4.7"
+    },
+    {
+     "parameter": "L",
+     "criterion": "Z max=10 %",
+     "value_mm": ">7.6"
+    },
+    {
+     "parameter": "d",
+     "criterion": "d2=10%",
+     "value_mm": "26.8"
+    }
+   ]
+  },
+  "sbacoustics_sb17cac35-4": {
+   "url": "https://erinsaudiocorner.com/driveunits/sbacoustics_sb17cac35-4/",
+   "limits": [
+    {
+     "parameter": "Bl",
+     "criterion": "Bl min=82%",
+     "value_mm": "5.1"
+    },
+    {
+     "parameter": "C",
+     "criterion": "C min=75%",
+     "value_mm": "2.8"
+    },
+    {
+     "parameter": "L",
+     "criterion": "Z max=10 %",
+     "value_mm": ">5.2"
+    },
+    {
+     "parameter": "d",
+     "criterion": "d2=10%",
+     "value_mm": "28.0"
+    }
+   ]
+  },
+  "scanspeak18wu4741t00": {
+   "url": "https://erinsaudiocorner.com/driveunits/scanspeak18wu4741t00/",
+   "limits": [
+    {
+     "parameter": "Bl",
+     "criterion": "Bl min=82%",
+     "value_mm": "10.2"
+    },
+    {
+     "parameter": "C",
+     "criterion": "C min=75%",
+     "value_mm": "8.5"
+    },
+    {
+     "parameter": "L",
+     "criterion": "Z max=10 %",
+     "value_mm": ">11.4"
+    },
+    {
+     "parameter": "d",
+     "criterion": "d2=10%",
+     "value_mm": "38.4"
+    }
+   ]
+  },
+  "dyn_mw182": {
+   "url": "https://erinsaudiocorner.com/driveunits/dyn_mw182/",
+   "limits": [
+    {
+     "parameter": "Bl",
+     "criterion": "Bl min=82%",
+     "value_mm": "5.1"
+    },
+    {
+     "parameter": "C",
+     "criterion": "C min=75%",
+     "value_mm": "3.9"
+    },
+    {
+     "parameter": "L",
+     "criterion": "Z max=10 %",
+     "value_mm": ">9.0"
+    },
+    {
+     "parameter": "d",
+     "criterion": "d2=10%",
+     "value_mm": "35.0"
+    }
+   ]
+  },
+  "seas-w18nx001": {
+   "url": "https://erinsaudiocorner.com/driveunits/seas-w18nx001/",
+   "limits": [
+    {
+     "parameter": "Bl",
+     "criterion": "Bl min=82%",
+     "value_mm": ">6.0"
+    },
+    {
+     "parameter": "C",
+     "criterion": "C min=75%",
+     "value_mm": "3"
+    },
+    {
+     "parameter": "L",
+     "criterion": "Z max=10 %",
+     "value_mm": ">6.0"
+    },
+    {
+     "parameter": "d",
+     "criterion": "d2=10%",
+     "value_mm": "28.4"
+    }
+   ]
+  }
+ }
+}

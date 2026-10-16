@@ -9,6 +9,7 @@ re-running the extraction:
     python3 ../lsi_extract.py ../cfg_separate.json ../out
     python3 ../lsi_extract.py ../cfg_combined.json ../outc
     python3 ../hd_extract.py ../cfg_hd.json ../outhd
+    python3 ../xp_extract.py . ../out/extracted.json ../outc/extracted.json ../xp/fit_ranges.json
 
 The extractors need numpy, Pillow and the tesseract command-line program.
 """

@@ -287,7 +287,7 @@ App.views.drivers = (() => {
     const limHost = h('div', { class: 'tbl-wrap' });
     detHost.append(h('div', { class: 'card' },
       h('div', { class: 'card-h' }, h('div', { class: 't' }, h('span', { class: 'kicker' }, 'Large signal'), h('h3', null, 'Nonlinear parameters relative to x = 0'))),
-      cHost, h('p', { class: 'hint' }, 'Lines: the fitted curves the simulation uses. Dots: the data points. Shaded ends: outside the measured range, where the curves are continued with their end slopes.'),
+      cHost, h('p', { class: 'hint' }, 'Lines: the fitted curves the simulation uses. Dots: the data points. Darker shaded ends: outside the measured range, where the curves are continued with their end slopes. Lighter band, for drivers with a Klippel fit range: measured, but outside the range ±xp that Klippel fitted.'),
       limHost));
     pCurves = new Plot(cHost, { height: 300, x: { type: 'lin', label: 'x, mm (coil out →)' }, y: { label: '% of value at rest' }, tipX: (x) => fmt(x, 2) + ' mm', tipY: (v) => v.toFixed(1) + ' %' });
     const ser = []; const col = { bl: '#56b6c2', kms: '#d9a441', le: '#e06c75' }; const nm = { bl: 'Bl(x)', kms: 'Kms(x)', le: 'Le(x)' };
@@ -300,6 +300,8 @@ App.views.drivers = (() => {
       }
       const R = sm.dataRange; const xs = ser.length ? ser[0].pts.map((p) => p[0]) : [-10, 10];
       if (isFinite(R[0])) bands = [{ x0: Math.min(...xs), x1: R[0], color: 'rgba(154,163,177,.07)' }, { x0: R[1], x1: Math.max(...xs), color: 'rgba(154,163,177,.07)' }];
+      const F = sm.fitRange; // Klippel's fit range ±xp: between it and the data range the curves rest on less than 1 % of the measurement
+      if (F && isFinite(F[0]) && (F[0] > R[0] || F[1] < R[1])) bands.push({ x0: R[0], x1: F[0], color: 'rgba(154,163,177,.04)' }, { x0: F[1], x1: R[1], color: 'rgba(154,163,177,.04)' });
     }
     pCurves.o.bands = bands;
     const vl = [];
@@ -315,7 +317,7 @@ App.views.drivers = (() => {
           h('tr', null, h('td', null, 'X_C: compliance falls to 75 % / 50 %'), h('td', { class: 'n' }, cell(L.xc75)), h('td', { class: 'n' }, cell(L.xc50))),
           h('tr', null, h('td', null, 'X_L: impedance at 8.5·fs changes 10 % / 17 %'), h('td', { class: 'n' }, cell(L.xl10)), h('td', { class: 'n' }, cell(L.xl17))),
           h('tr', null, h('td', null, 'X_D: Doppler sidebands at f2 = 8.5·fs reach 10 % root-sum-square, about 14 % as d2 (' + L.xd10.basis + ', ' + fmt(L.xd10.fs, 1) + ' Hz)'), h('td', { class: 'n' }, cell(L.xd10)), h('td', { class: 'n' }, '–')))));
-      limHost.append(h('p', { class: 'hint', style: { marginTop: '6px' } }, '"> value" means the threshold is not reached inside the measured range. The 82/75/10 % set gives about 10 % distortion in a two-tone test; the 70/50/17 % set about 20 %, the usual subwoofer criterion.'));
+      limHost.append(h('p', { class: 'hint', style: { marginTop: '6px' } }, '"> value" means the threshold is not reached inside the fit range: Klippel\'s working range ±xp when the entry gives one, otherwise the measured range. The 82/75/10 % set gives about 10 % distortion in a two-tone test; the 70/50/17 % set about 20 %, the usual subwoofer criterion.'));
     }
     if (editable) detHost.append(curveEditor(d));
     // provenance
@@ -323,6 +325,7 @@ App.views.drivers = (() => {
     for (const s of (d.sources || [])) prov.append(h('div', null, h('div', null, h('a', { href: s.url, target: '_blank', rel: 'noopener' }, s.title || s.publisher), ' · ', h('span', { class: 'muted small' }, s.publisher + (s.retrieved ? ', retrieved ' + s.retrieved : ''))), s.what ? h('p', { class: 'small muted' }, s.what) : null));
     if (d.extraction && d.extraction.curves) {
       const ex = d.extraction; const rows = Object.entries(ex.curves).map(([k, c]) => h('tr', null, h('td', null, nm[k]), h('td', null, h('a', { href: c.image, target: '_blank', rel: 'noopener' }, 'plot')), h('td', { class: 'n' }, c.x_axis.refs.length + ' / ' + c.y_axis.refs.length), h('td', { class: 'n' }, fmt(c.x_axis.max_resid_px, 2) + ' / ' + fmt(c.y_axis.max_resid_px, 2) + ' px'), h('td', { class: 'n' }, fmt(c.range_mm[0], 1) + ' to ' + fmt(c.range_mm[1], 1) + ' mm')));
+      if (ex.fit_range) prov.append(h('p', { class: 'small' }, 'Fit range ±xp: ' + fmt(ex.fit_range.xp_mm[0], 2) + ' to ' + fmt(ex.fit_range.xp_mm[1], 2) + ' mm. ' + ex.fit_range.how + ' Lightly shaded in the chart above.'));
       prov.append(h('p', { class: 'small' }, 'Extraction: ' + ex.tool + '.'), h('div', { class: 'tbl-wrap' }, h('table', { class: 't' }, h('thead', null, h('tr', null, h('th', null, 'Curve'), h('th', null, 'Source'), h('th', { class: 'n' }, 'Check ticks x / y'), h('th', { class: 'n' }, 'Max residual x / y'), h('th', { class: 'n' }, 'Range'))), h('tbody', null, rows))));
     }
     if (d.measurements && d.measurements.length) prov.append(h('p', { class: 'small' }, 'Measured data for overlays: ', d.measurements.map((m, i) => [i ? ', ' : '', m.image ? h('a', { href: m.image, target: '_blank', rel: 'noopener' }, m.label) : m.label])));

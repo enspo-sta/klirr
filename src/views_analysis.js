@@ -143,14 +143,14 @@ App.views.distortion = (() => {
     App._hdC.setData(r.data.map((d, k) => ({ id: r.meta[k].id + 'c', name: r.meta[k].name, color: r.meta[k].color, pts: d.f.map((f, i) => [f, d.spl[i] - d.splLin[i]]), fmt: (v) => v.toFixed(2) + ' dB' })), { x: { min: fr[0], max: fr[1] } });
     // table
     const rows = r.data.map((d, k) => {
-      const m = r.meta[k]; let wx = { v: -1 }, wdc = { v: 0 }, w2 = { v: -1 }, w3 = { v: -1 }, oor = false;
+      const m = r.meta[k]; let wx = { v: -1 }, wdc = { v: 0 }, w2 = { v: -1 }, w3 = { v: -1 }, oor = false, oof = false;
       d.f.forEach((f, i) => {
-        d.ways[i].forEach((w) => { if (w.xpk > wx.v) wx = { v: w.xpk, f }; if (Math.abs(w.xdc) > Math.abs(wdc.v)) wdc = { v: w.xdc, f }; if (w.outOfRange) oor = true; });
+        d.ways[i].forEach((w) => { if (w.xpk > wx.v) wx = { v: w.xpk, f }; if (Math.abs(w.xdc) > Math.abs(wdc.v)) wdc = { v: w.xdc, f }; if (w.outOfRange) oor = true; if (w.outOfFit) oof = true; });
         if (d.hd[i][0] > w2.v) w2 = { v: d.hd[i][0], f }; if (d.hd[i][1] > w3.v) w3 = { v: d.hd[i][1], f };
       });
       return h('tr', null, h('td', { class: 'nm' }, h('span', { class: 'row', style: { flexWrap: 'nowrap', gap: '6px' } }, h('span', { class: 'sw', style: { background: m.color } }), m.name)),
         h('td', { class: 'n' }, fmt(d.V[0], 2) + (r.st.mode === 'spl' ? '–' + fmt(Math.max(...d.V), 1) : '') + ' V'),
-        h('td', { class: 'n' }, fmt(wx.v, 2) + ' mm @ ' + fmtHz(wx.f) + (oor ? ' ⚠' : '')),
+        h('td', { class: 'n' }, fmt(wx.v, 2) + ' mm @ ' + fmtHz(wx.f) + (oor ? ' ⚠' : oof ? ' †' : '')),
         h('td', { class: 'n' }, fmt(wdc.v, 3) + ' mm @ ' + fmtHz(wdc.f || 0)),
         h('td', { class: 'n' }, fmtRatio(w2.v, st.unit) + ' @ ' + fmtHz(w2.f)),
         h('td', { class: 'n' }, fmtRatio(w3.v, st.unit) + ' @ ' + fmtHz(w3.f)));
@@ -158,6 +158,10 @@ App.views.distortion = (() => {
     tableHost.innerHTML = '';
     tableHost.append(h('table', { class: 't' }, h('thead', null, h('tr', null, h('th', null, 'Setup'), h('th', { class: 'n' }, 'Drive'), h('th', { class: 'n' }, 'Peak excursion'), h('th', { class: 'n' }, 'Largest DC offset'), h('th', { class: 'n' }, 'Worst H2'), h('th', { class: 'n' }, 'Worst H3'))), h('tbody', null, rows)));
     if (r.data.some((d) => d.ways.some((ws) => ws.some((w) => w.outOfRange)))) tableHost.append(h('p', { class: 'hint', style: { marginTop: '8px' } }, '⚠ The voice coil left the displacement range covered by the driver\'s measured curves; beyond that range the curves are extended with their end slopes, so treat those points as rough.'));
+    else if (r.data.some((d) => d.ways.some((ws) => ws.some((w) => w.outOfFit)))) tableHost.append(h('p', { class: 'hint', style: { marginTop: '8px' } }, '† The voice coil went beyond Klippel\'s fit range ±xp but stayed inside the plotted curves. There the curves rest on less than 1 % of the measurement, so treat those points with some care.'));
+    const unsettled = [];
+    r.data.forEach((d, k) => (d.converged || []).forEach((c, i) => { if (c === false) unsettled.push(r.meta[k].name + ' ' + fmtHz(d.f[i])); }));
+    if (unsettled.length) tableHost.append(h('p', { class: 'hint', style: { marginTop: '8px' } }, '⚠ The simulation had not reached a steady state at ' + unsettled.join(', ') + ' (a very lightly damped setup, such as current drive or a high-Q passive radiator, whose start-up transient outlasts the settling limit). Low-level harmonics there may be off; the fundamental and H2 are usually still right.'));
     drawMech();
   }
   function drawMech() {
@@ -343,6 +347,8 @@ App.views.imd = (() => {
     tbl.append(h('table', { class: 't' },
       h('thead', null, h('tr', null, h('th', null, 'Product'), cols.map(({ d }) => h('th', { class: 'n wrap' }, h('span', { class: 'row', style: { justifyContent: 'flex-end', gap: '6px', flexWrap: 'nowrap' } }, h('span', { class: 'sw', style: { background: d.color } }), d.name))))),
       h('tbody', null, rows.map(([label, fn, strong]) => h('tr', null, h('td', { class: 'nm' }, strong ? h('b', null, label) : label), cols.map(({ q }) => h('td', { class: 'n' }, strong ? h('b', null, fn(q)) : fn(q))))))));
+    const unsettledImd = cols.filter(({ q }) => q.converged === false).map(({ d }) => d.name);
+    if (unsettledImd.length) tbl.append(h('p', { class: 'hint', style: { marginTop: '8px' } }, '⚠ The simulation had not reached a steady state at ' + 'this point for ' + unsettledImd.join(', ') + ' (a very lightly damped setup, such as current drive or a high-Q passive radiator, whose start-up transient outlasts the settling limit). Low-level harmonics there may be off; the fundamental and H2 are usually still right.'));
     tbl.append(h('p', { class: 'hint', style: { marginTop: '8px' } }, '"d2 re f1" is the same sideband sum referred to the bass tone instead of the voice tone. Some published intermodulation figures use that reference, so keep the two apart when comparing sources.'));
   }
   function drawMech() {
@@ -410,8 +416,10 @@ App.views.multitone = (() => {
     tiles.innerHTML = '';
     R.data.forEach((d, k) => {
       const w = d.ways[0];
-      tiles.append(h('div', { class: 'tile' }, h('span', { class: 'k' }, h('span', { class: 'sw', style: { background: R.meta[k].color } }), R.meta[k].name), h('span', { class: 'v' }, fmt(d.totalDb, 1) + ' dB'), h('span', { class: 's' }, d.nTones + ' tones · x_pk ' + fmt(w.xpk, 2) + ' mm · DC ' + fmt(w.xdc, 3) + ' mm')));
+      tiles.append(h('div', { class: 'tile' }, h('span', { class: 'k' }, h('span', { class: 'sw', style: { background: R.meta[k].color } }), R.meta[k].name), h('span', { class: 'v' }, fmt(d.totalDb, 1) + ' dB'), h('span', { class: 's' }, d.nTones + ' tones · x_pk ' + fmt(w.xpk, 2) + ' mm · DC ' + fmt(w.xdc, 3) + ' mm' + (d.converged === false ? ' · ⚠ not settled' : ''))));
     });
+    const unsettledMt = R.data.map((d, k) => (d.converged === false ? R.meta[k].name : null)).filter(Boolean);
+    if (unsettledMt.length) tiles.append(h('p', { class: 'hint', style: { gridColumn: '1 / -1', margin: 0 } }, '⚠ The simulation had not reached a steady state at ' + unsettledMt.join(', ') + ' (a very lightly damped setup, such as current drive or a high-Q passive radiator, whose start-up transient outlasts the settling limit). Low-level harmonics there may be off; the fundamental and H2 are usually still right.'));
     specSel.innerHTML = ''; R.meta.forEach((m) => specSel.append(h('option', { value: m.id }, m.name)));
     drawSpec();
     mechHost.innerHTML = '';
@@ -462,7 +470,7 @@ App.views.maxspl = (() => {
           field('Amplifier limit, RMS', numInput('max-vmax', st.vmax, (v) => { st.vmax = clamp(v || 40, 1, 1000); saveSettings(); }), 'V')),
         checkbox('max-power', st.power, 'Limit input power to the rated power when the driver has one', (v) => { st.power = v; saveSettings(); }),
         rb.el, pb.el,
-        h('p', { class: 'hint' }, 'A criterion set to 0 is off. At each frequency a search finds the highest drive level that passes every criterion, usually to within 0.1 dB. 40 V RMS is 400 W into 4 Ω or 200 W into 8 Ω. Power is the heat in the voice coil, Re·I² with Re at the temperature set in the setup. A rated power is usually defined with a noise signal over hours, so this sine comparison is approximate; long-term thermal compression is not modelled.'))));
+        h('p', { class: 'hint' }, 'A criterion set to 0 is off. At each frequency a search finds the highest drive level that passes every criterion, usually to within 0.1 dB. The amplifier limit applies to each way\'s voltage at the driver terminals, after its filters and gain, so a boost such as a Linkwitz transform reaches it sooner. 40 V RMS is 400 W into 4 Ω or 200 W into 8 Ω. Power is the heat in the voice coil, Re·I² with Re at the temperature set in the setup. A rated power is usually defined with a noise signal over hours, so this sine comparison is approximate; long-term thermal compression is not modelled.'))));
     pM = h('div'); tbl = h('div', { class: 'tbl-wrap' });
     const res = h('div', { class: 'stack' },
       h('div', { class: 'card' }, h('div', { class: 'card-h' }, h('div', { class: 't' }, h('span', { class: 'kicker' }, 'Result'), h('h2', null, 'Maximum fundamental SPL at 1 m')), exportButtons(() => App._maxP, 'klirr-max-spl')), pM, h('p', { class: 'hint' }, 'Hover a point to see which criterion stopped it.')),
@@ -506,6 +514,9 @@ App.views.maxspl = (() => {
       h('tbody', null, fsel.map((f, i) => h('tr', null, h('td', { class: 'n', style: { textAlign: 'left' } }, fmtHz(f)), R.data.map((d) => h('td', { class: 'n' }, d.r.spl[i] == null ? '–' : fmt(d.r.spl[i], 1) + ' dB', h('div', { class: 'small muted' }, d.r.limit[i]))))))));
     const notes = R.data.map((d) => d.name + ': excursion limit ' + d.crit.xlim.map((x) => (x ? fmt(x, 1) + ' mm' : 'none')).join(' / ') + (d.crit.power.some(Boolean) ? ', power ' + d.crit.power.map((p) => (p ? p + ' W' : 'none')).join(' / ') : ''));
     tbl.append(h('p', { class: 'hint', style: { marginTop: '8px' } }, notes.join('. ') + '.'));
+    const unsettledMax = [];
+    R.data.forEach((d) => d.r.details.forEach((x, i) => { if (x && x.converged === false) unsettledMax.push(d.name + ' ' + fmtHz(d.r.f[i])); }));
+    if (unsettledMax.length) tbl.append(h('p', { class: 'hint', style: { marginTop: '8px' } }, '⚠ The simulation had not reached a steady state at ' + unsettledMax.join(', ') + ' (a very lightly damped setup, such as current drive or a high-Q passive radiator, whose start-up transient outlasts the settling limit). Low-level harmonics there may be off; the fundamental and H2 are usually still right.'));
   }
   return { build, onShow() { if (!pM) build(); } };
 })();
