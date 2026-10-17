@@ -40,6 +40,7 @@ def add(name, did, f, V, enc_engine=None, enc_hb=None, drive='voltage', abs_kms=
 
 for f in [20, 30, 40, 60, 100, 300]: add(f'PTT8 infinite baffle {f} Hz 5.87 V', 'eac-ptt8', f, 5.87)
 for f in [30, 60]: add(f'PTT8 infinite baffle {f} Hz 5.87 V, stiffness from the curve', 'eac-ptt8', f, 5.87, abs_kms='curve')
+for f in [30, 60]: add(f'PTT8 infinite baffle {f} Hz 5.87 V, small-signal stiffness plus the curve\'s change', 'eac-ptt8', f, 5.87, abs_kms='offset')
 for f in [30, 50, 80, 150, 1000]: add(f'PTT6.5M infinite baffle {f} Hz 6.14 V', 'eac-ptt65m', f, 6.14, K=32)
 for f in [30, 60]: add(f'PTT6.5X infinite baffle {f} Hz 8.41 V', 'eac-ptt65x', f, 8.41, K=32)
 for f in [20, 32, 50, 100]: add(f'PTT8 sealed 15 L {f} Hz 4.61 V', 'eac-ptt8', f, 4.61, {'type': 'sealed', 'Vb': 15}, {'type': 'sealed', 'V0': 0.015})

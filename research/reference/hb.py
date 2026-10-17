@@ -13,7 +13,8 @@ lookup tables. The equations are written from first principles here, not copied 
   far field (no Doppler): p = rho/(Omega r) (Sd a + Sp ap + Sr ar)
 
 Curves: Chebyshev least squares of the library points (numpy), normalised to their value at x = 0,
-Bl and Kms scaled to the small-signal table, L2 and R2 following Le, as the Guide describes.
+Bl and Kms scaled to the small-signal table, L2 and R2 following Le, as the Guide describes; Kms optionally as the
+curve measured it, or the small-signal value plus the curve's change.
 """
 import json
 import numpy as np
@@ -96,6 +97,8 @@ def driver_model(d, abs_kms='table'):
     cb, ck, cl = Curve(nl.get('bl'), 'bl'), Curve(nl.get('kms'), 'kms'), Curve(nl.get('le'), 'le')
     if abs_kms == 'curve' and not ck.const:
         ts['Kms'] = ck.y0 * 1e3
+    # 'offset': the small-signal stiffness at rest plus the curve's change in N/m, Kms + Kc(x) - Kc(0)
+    ts['kOff'] = ck.y0 * 1e3 / ts['Kms'] if abs_kms == 'offset' and not ck.const else None
     return ts, cb, ck, cl
 
 
@@ -154,6 +157,7 @@ def solve(model, enc, f, V, K=24, Nt=None, drive='voltage', tol=1e-11, maxit=60,
         U = unpack(z)
         X = U['x']; x = B @ X; v = B @ (D @ X); a = B @ (D @ D @ X)
         rb = cb.r(x); rk = ck.r(x); rl = cl.r(x); drl = cl.dr(x)
+        if ts['kOff'] is not None: rk = 1 + ts['kOff'] * (rk - 1)
         Bl = Bl0 * rb; Fk = K0 * rk * x
         Le = Le0 * rl; dLe = Le0 * drl
         i2 = B @ U['i2'] if 'i2' in U else np.zeros(Nt)

@@ -9,7 +9,11 @@ re-running the extraction:
     python3 ../lsi_extract.py ../cfg_separate.json ../out
     python3 ../lsi_extract.py ../cfg_combined.json ../outc
     python3 ../hd_extract.py ../cfg_hd.json ../outhd
+    python3 ../hd_extract.py ../cfg_hd2020.json ../outhd2020
     python3 ../xp_extract.py . ../out/extracted.json ../outc/extracted.json ../xp/fit_ranges.json
+
+The 2020 reviews publish their harmonic distortion charts as animated GIFs, one frame per level; each frame
+is also written out as <name>_f<k>.png for the extractor.
 
 The extractors need numpy, Pillow and the tesseract command-line program.
 """
@@ -31,6 +35,11 @@ def main():
         with urllib.request.urlopen(req, timeout=60) as r, open(dest, 'wb') as f:
             f.write(r.read())
         print('got ', name, os.path.getsize(dest), 'bytes')
+    for name in sources:
+        if name.endswith('.gif'):
+            from PIL import Image, ImageSequence
+            for k, frame in enumerate(ImageSequence.Iterator(Image.open(os.path.join(OUT, name)))):
+                frame.convert('RGB').save(os.path.join(OUT, f'{name[:-4]}_f{k}.png'))
     print(len(sources), 'images in', OUT)
 
 

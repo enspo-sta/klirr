@@ -185,8 +185,8 @@ App.views.setups = (() => {
               field('Drive', selectInput('su-dr-' + i, w.drive || 'voltage', [['voltage', 'Voltage source'], ['current', 'Current source (i = u / Re)']], (v) => { w.drive = v; upd(); })),
               field('Voice-coil heating', numInput('su-dt-' + i, w.dT || 0, (v) => { w.dT = clamp(v || 0, 0, 250); upd(); }), 'K')),
             checkbox('su-inv-' + i, w.invert, 'Invert polarity', (v) => { w.invert = v; upd(); }),
-            hasK ? field('Suspension stiffness at rest', selectInput('su-ks-' + i, w.kmsSource || 'table', [['table', 'Small-signal table (Klippel LPM)'], ['curve', 'Large-signal curve Kms(0) (Klippel LSI)']], (v) => { w.kmsSource = v; upd(); })) : null,
-            h('p', { class: 'hint' }, 'Series resistance models amplifier output impedance, cable or a passive part in series. Current drive removes the electrical nonlinearities of Le(x) and Bl(x)·v but also the electrical damping. Heating raises Re by 0.39 % per kelvin.'))),
+            hasK ? field('Suspension stiffness', selectInput('su-ks-' + i, w.kmsSource || 'table', [['table', 'Small-signal table at rest, curve shape scaled to it'], ['offset', 'Small-signal table at rest, plus the curve\'s change'], ['curve', 'Large-signal curve as measured, Kms(0) from Klippel LSI']], (v) => { w.kmsSource = v; upd(); })) : null,
+            h('p', { class: 'hint' }, 'Series resistance models amplifier output impedance, cable or a passive part in series. Current drive removes the electrical nonlinearities of Le(x) and Bl(x)·v but also the electrical damping. Heating raises Re by 0.39 % per kelvin.' + (hasK ? ' The stiffness options differ in how the large-signal curve is scaled; the Guide compares them with measurements.' : '')))),
         h('details', { class: 'sec', open: true }, h('summary', null, 'Enclosure'), encHost),
         h('details', { class: 'sec', open: (w.filters || []).length > 0 }, fltSum, fltHost)));
   }
