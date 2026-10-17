@@ -8,6 +8,7 @@ re-running the extraction:
     cd images
     python3 ../lsi_extract.py ../cfg_separate.json ../out
     python3 ../lsi_extract.py ../cfg_combined.json ../outc
+    python3 ../lsi_extract.py ../cfg_li.json ../outli
     python3 ../hd_extract.py ../cfg_hd.json ../outhd
     python3 ../hd_extract.py ../cfg_hd2020.json ../outhd2020
     python3 ../xp_extract.py . ../out/extracted.json ../outc/extracted.json ../xp/fit_ranges.json

@@ -290,7 +290,7 @@ App.views.drivers = (() => {
       cHost, h('p', { class: 'hint' }, 'Lines: the fitted curves the simulation uses. Dots: the data points. Darker shaded ends: outside the measured range, where the curves are continued with their end slopes. Lighter band, for drivers with a Klippel fit range: measured, but outside the range ±xp that Klippel fitted.'),
       limHost));
     pCurves = new Plot(cHost, { height: 300, x: { type: 'lin', label: 'x, mm (coil out →)' }, y: { label: '% of value at rest' }, tipX: (x) => fmt(x, 2) + ' mm', tipY: (v) => v.toFixed(1) + ' %' });
-    const ser = []; const col = { bl: '#56b6c2', kms: '#d9a441', le: '#e06c75' }; const nm = { bl: 'Bl(x)', kms: 'Kms(x)', le: 'Le(x)' };
+    const ser = []; const col = { bl: '#56b6c2', kms: '#d9a441', le: '#e06c75' }; const nm = { bl: 'Bl(x)', kms: 'Kms(x)', le: 'Le(x)', li: 'Le(i)' };
     let bands = [];
     if (!sm.error) {
       for (const k of ['bl', 'kms', 'le']) {
@@ -308,6 +308,15 @@ App.views.drivers = (() => {
     if (sm.lim) { if (sm.lim.xbl82 && !sm.lim.xbl82.beyond) vl.push({ x: sm.lim.xbl82.x, color: '#56b6c2', dash: [3, 3], label: 'X_Bl' }, { x: -sm.lim.xbl82.x, color: '#56b6c2', dash: [3, 3] }); if (sm.lim.xc75 && !sm.lim.xc75.beyond) vl.push({ x: sm.lim.xc75.x, color: '#d9a441', dash: [3, 3], label: 'X_C' }, { x: -sm.lim.xc75.x, color: '#d9a441', dash: [3, 3] }); }
     pCurves.setData(ser, { vlines: vl });
     if (!ser.length) cHost.append(h('p', { class: 'hint' }, 'No large-signal curves: this driver is simulated with constant Bl, Kms and Le. Doppler, box air and port nonlinearities still apply.'));
+    if (!sm.error && sm.curves.li) { // Klippel's inductance at rest against current, L(X=0, I)
+      const c = sm.curves.li, liHost = h('div');
+      cHost.append(h('p', { class: 'small', style: { marginTop: '12px' } }, 'Inductance at rest against current, Le(i), relative to its value at zero current'), liHost);
+      const pLi = new Plot(liHost, { height: 200, x: { type: 'lin', label: 'current, A' }, y: { label: '% of value at 0 A' }, tipX: (x) => fmt(x, 2) + ' A', tipY: (v) => v.toFixed(2) + ' %' });
+      const step = Math.max(1, Math.floor(c.px.length / 60));
+      pLi.o.bands = [{ x0: c.x[0], x1: c.lo, color: 'rgba(154,163,177,.07)' }, { x0: c.hi, x1: c.x[c.x.length - 1], color: 'rgba(154,163,177,.07)' }];
+      pLi.setData([{ id: 'li', name: 'Le(i)' + (c.fitOrder ? ' (fit order ' + c.fitOrder + ')' : ''), color: '#e06c75', pts: c.x.map((x, i) => [x, c.r[i] * 100]) },
+        { id: 'lip', name: 'Le(i) data', color: '#e06c75', kind: 'dots', r: 2.2, legend: false, pts: c.px.filter((_, i) => i % step === 0).map((x, i) => [x, c.py[i * step] * 100]) }]);
+    }
     // limits table
     if (sm.lim) {
       const L = sm.lim; const cell = (o) => (o ? (o.beyond ? '> ' : '') + fmt(o.x, 1) + ' mm' : '–');
@@ -324,7 +333,7 @@ App.views.drivers = (() => {
     const prov = h('div', { class: 'fs-body' });
     for (const s of (d.sources || [])) prov.append(h('div', null, h('div', null, h('a', { href: s.url, target: '_blank', rel: 'noopener' }, s.title || s.publisher), ' · ', h('span', { class: 'muted small' }, s.publisher + (s.retrieved ? ', retrieved ' + s.retrieved : ''))), s.what ? h('p', { class: 'small muted' }, s.what) : null));
     if (d.extraction && d.extraction.curves) {
-      const ex = d.extraction; const rows = Object.entries(ex.curves).map(([k, c]) => h('tr', null, h('td', null, nm[k]), h('td', null, h('a', { href: c.image, target: '_blank', rel: 'noopener' }, 'plot')), h('td', { class: 'n' }, c.x_axis.refs.length + ' / ' + c.y_axis.refs.length), h('td', { class: 'n' }, fmt(c.x_axis.max_resid_px, 2) + ' / ' + fmt(c.y_axis.max_resid_px, 2) + ' px'), h('td', { class: 'n' }, fmt(c.range_mm[0], 1) + ' to ' + fmt(c.range_mm[1], 1) + ' mm')));
+      const ex = d.extraction; const rows = Object.entries(ex.curves).map(([k, c]) => h('tr', null, h('td', null, nm[k]), h('td', null, h('a', { href: c.image, target: '_blank', rel: 'noopener' }, 'plot')), h('td', { class: 'n' }, c.x_axis.refs.length + ' / ' + c.y_axis.refs.length), h('td', { class: 'n' }, fmt(c.x_axis.max_resid_px, 2) + ' / ' + fmt(c.y_axis.max_resid_px, 2) + ' px'), h('td', { class: 'n' }, c.range_A ? fmt(c.range_A[0], 1) + ' to ' + fmt(c.range_A[1], 1) + ' A' : fmt(c.range_mm[0], 1) + ' to ' + fmt(c.range_mm[1], 1) + ' mm')));
       if (ex.fit_range) prov.append(h('p', { class: 'small' }, 'Fit range ±xp: ' + fmt(ex.fit_range.xp_mm[0], 2) + ' to ' + fmt(ex.fit_range.xp_mm[1], 2) + ' mm. ' + ex.fit_range.how + ' Lightly shaded in the chart above.'));
       prov.append(h('p', { class: 'small' }, 'Extraction: ' + ex.tool + '.'), h('div', { class: 'tbl-wrap' }, h('table', { class: 't' }, h('thead', null, h('tr', null, h('th', null, 'Curve'), h('th', null, 'Source'), h('th', { class: 'n' }, 'Check ticks x / y'), h('th', { class: 'n' }, 'Max residual x / y'), h('th', { class: 'n' }, 'Range'))), h('tbody', null, rows))));
     }

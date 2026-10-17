@@ -7,10 +7,10 @@ Everything `build_library.py` reads to make `library.json`.
 | `erin/index.json` | For each Erin's Audio Corner review: the page URL and title, the plot image URLs, and the small-signal (Klippel LPM) parameters read as text from the page. Retrieved 2026-09-26. |
 | `lsi/lsi_extract.py` | Extracts Bl(x), Kms(x) and Le(x) curves from Klippel LSI plot images. |
 | `lsi/hd_extract.py` | Extracts H2 and H3 curves from harmonic distortion plots. |
-| `lsi/cfg_separate.json`, `lsi/cfg_combined.json`, `lsi/cfg_hd.json`, `lsi/cfg_hd2020.json` | Per-image settings: curve colour, expected tick values, crop. The 2020 harmonic distortion charts draw dotted minor gridlines, so their settings raise the gridline threshold and give the plot's left edge. |
+| `lsi/cfg_separate.json`, `lsi/cfg_combined.json`, `lsi/cfg_li.json`, `lsi/cfg_hd.json`, `lsi/cfg_hd2020.json` | Per-image settings: curve colour, expected tick values, crop. The 2020 harmonic distortion charts draw dotted minor gridlines, so their settings raise the gridline threshold and give the plot's left edge. |
 | `lsi/sources.json` | Image file name to original URL, for every image the configs name. |
 | `lsi/fetch_sources.py` | Downloads those images into `lsi/images/` (not committed), and splits each animated GIF into one PNG per frame. |
-| `lsi/out/`, `lsi/outc/`, `lsi/outhd/`, `lsi/outhd2020/` | Extraction results: points plus the axis calibration of every curve (tick pixel positions, largest residual). |
+| `lsi/out/`, `lsi/outc/`, `lsi/outli/`, `lsi/outhd/`, `lsi/outhd2020/` | Extraction results (`outli/`: Klippel's inductance at rest against current, L(X=0, I), from the five 2020 reviews): points plus the axis calibration of every curve (tick pixel positions, largest residual). |
 | `reference/hb.py`, `reference/run_reference.py`, `reference/reference.json` | An independent harmonic-balance solver of the same model (frequency domain, Newton iteration, no time stepping) and its solution of 28 cases: infinite baffle, sealed, vented, passive radiator, current drive, all three stiffness options. `tests/reference_test.js` compares the engine with it; rerun `run_reference.py` (numpy and node) when the built-in curves change. |
 | `lsi/xp_extract.py`, `lsi/xp/fit_ranges.json` | Klippel's fit range ±xp: where each plot draws its curve in black (legend "Xp- < X < Xp+"), measured with the extraction's own axis calibration; per plot and, as the median of the three plots, per driver. |
 | `erin/limits.json` | Klippel's displacement limits as printed in each review's limits table (text). Retrieved 2026-10-15. `tests/test_engine.js` checks the Guide's limits table against it. |
@@ -37,6 +37,7 @@ python3 fetch_sources.py
 cd images
 python3 ../lsi_extract.py ../cfg_separate.json ../out
 python3 ../lsi_extract.py ../cfg_combined.json ../outc
+python3 ../lsi_extract.py ../cfg_li.json ../outli
 python3 ../hd_extract.py ../cfg_hd.json ../outhd
 python3 ../hd_extract.py ../cfg_hd2020.json ../outhd2020
 python3 ../xp_extract.py . ../out/extracted.json ../outc/extracted.json ../xp/fit_ranges.json

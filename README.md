@@ -31,13 +31,16 @@ importing a driver database file whose harmonic distortion measurements become o
 The model covers the excursion-driven nonlinearities. Against Erin's measured distortion at 96 dB, driven at the
 voltages printed on his intermodulation charts, it lands within about 4 dB on average where those dominate (PTT6.5M
 below 150 Hz, PTT6.5X below 60 Hz). It reads 5 to 30 dB low where the motor is very linear, as on the PTT8. Mechanisms
-the model leaves out (current-dependent inductance, eddy currents, suspension creep and hysteresis) are candidates for
-that gap, as are differences between samples; none of them has been tested here.
+the model leaves out (flux modulation, eddy currents, suspension creep and hysteresis) are candidates for that gap, as
+are differences between samples; none of them has been tested here.
+For the five drivers whose Klippel reports plot inductance against current, Le(i) is in the model. It hardly touches
+the bass, but in the midrange it brings the SB17CAC35-4's H3 onto the measurement and closes 35 to 43 dB of the gap on
+the other four, which still read 19 to 46 dB low.
 The suspension stiffness is a modelling choice with a large effect: Klippel's large-signal curve puts it at rest at
 37 to 59 % of the small-signal table. By default Klirr scales the curve's shape to the small-signal value; Setups also
 offers the curve as measured and the small-signal value plus the curve's change. On five drivers that played no part
 in choosing the default, at six levels each, the default has the smallest bias at high level, and the three options'
-mean absolute errors lie within 0.8 dB of each other.
+mean absolute errors lie within 0.9 dB of each other.
 The Guide tab in the app has the full validation tables and sources.
 
 ## Working on it
