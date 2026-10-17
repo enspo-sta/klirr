@@ -22,7 +22,7 @@ App.views.distortion = (() => {
         const g = h('div', { class: 'grid2' }, field('SPL at 1 m', numInput('hd-level', st.level, (v) => { st.level = clamp(v || 94, 40, 140); saveSettings(); }), 'dB'));
         if (st.mode === 'splref') g.append(field('Reference frequency', numInput('hd-fref', st.fref, (v) => { st.fref = clamp(v || 500, 10, 20000); saveSettings(); }), 'Hz'));
         levelFields.append(g);
-        levelFields.append(h('p', { class: 'hint' }, st.mode === 'splref' ? 'Like a measurement: one voltage for the whole sweep, chosen so the linear model gives this SPL at the reference frequency. Your driver database convention is 94 dB at 500 Hz for mids and 100 Hz for bass.' : 'Each frequency is driven to this SPL in the linear model, so low frequencies get large excursion. Useful for comparing at equal output.'));
+        levelFields.append(h('p', { class: 'hint' }, st.mode === 'splref' ? 'Like a measurement: one voltage for the whole sweep, chosen so the linear model gives this SPL at the reference frequency. To compare with a set from your driver database, use the level it states and the frequency that level was read at: for HiFiCompass, the same voltage\'s response at 1 kHz for woofers and midranges, or across 2 to 10 kHz for tweeters. The database compares drivers at 94 dB at 1 m unless you choose another level.' : 'Each frequency is driven to this SPL in the linear model, so low frequencies get large excursion. Useful for comparing at equal output.'));
       }
     };
     renderLevel();

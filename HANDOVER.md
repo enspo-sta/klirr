@@ -1,13 +1,13 @@
 # Handover
 
-State on 17 October 2026, `main` at the merge of pull request #7. Read this together with `CLAUDE.md`.
+State on 18 October 2026, after pull request #9 and the fixes that followed it. Read this together with `CLAUDE.md`.
 
 ## Where Klirr is published
 
 | What | Where |
 | --- | --- |
 | GitHub Pages, rebuilt and deployed by the workflow on every push to `main` | https://enspo-sta.github.io/klirr/ |
-| Klirr as a private Claude artifact (version 4, built from `main` at #7) | https://claude.ai/artifact/U2prUaNQ8LgdTLk9wSGnTA |
+| Klirr as a private Claude artifact, republished from `main` after each merge | https://claude.ai/artifact/U2prUaNQ8LgdTLk9wSGnTA |
 | First-principles audit of Klirr (report; its status section lists what was done) | https://claude.ai/artifact/UGqcs83abhvEUHF21JKoZT |
 | Hold-out test against HiFiCompass's PTT8 measurements (report, written before #1 to #7) | https://claude.ai/artifact/SH4C9pjVv6n4WWLw4eMKHL |
 | AM versus FM distortion (report) | https://claude.ai/artifact/TsVdh7KFnjtuPGU9QwNwYi |
@@ -30,6 +30,12 @@ survive.
 
 The Guide (`src/template.html`) has the tables and their sources; `tests/test_engine.js`, `tests/cmp_erin.js` and
 `tests/cmp_erin2020.js` fail when the engine no longer reproduces them.
+
+## Since the audit
+
+| Pull request | Change |
+| --- | --- |
+| [#9](https://github.com/enspo-sta/klirr/pull/9) | Import from David's driver database as it is now: the driver files in its `database/drivers`, its viewer's JSON export and the older `drivers.json`. Harmonic distortion sets become overlays in Distortion, read as the database's own viewer reads them (the driver database section of `src/views_manage.js`; `tests/import_test.js`). The extraction readers in `research/lsi` run on Windows. |
 
 ## Where the newer data lives
 
@@ -74,6 +80,13 @@ three were available in the cloud session, and so was the headless browser for `
   to the reference at a smaller step.
 - **When the built-in curves change**, rerun `python3 research/reference/run_reference.py` (needs numpy) and commit
   `reference.json` with them.
+- **The driver database** is the private repository [enspo-sta/elementval-drivers](https://github.com/enspo-sta/elementval-drivers)
+  (it holds HiFiCompass Premium data), with its viewer at https://elementval-drivers.pages.dev/ behind a family login.
+  Read it read-only (another session works in it) and never copy its data into this public repository: the import test
+  uses made-up records in its formats. Its rules for levels and comparisons are in its `CLAUDE.md` and in David's
+  driver-analysis skill (`references/comparison-rules.md`, `references/sources.md`). Of its 831 live harmonic sets on
+  17 October 2026, 800 import as overlays; the other 31 give total harmonic distortion only, which Distortion does not
+  overlay.
 
 ## How the owner works
 
