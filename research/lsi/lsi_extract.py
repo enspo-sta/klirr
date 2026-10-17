@@ -6,11 +6,33 @@ crop to the plot, calibrate both axes from OCR-read tick labels paired with dete
 curve by its exact colour, trace per column with continuity tracking, then write raw points plus
 calibration metadata and a debug overlay for visual verification.
 """
-import json, math, subprocess, sys, os, re
+import json, math, subprocess, sys, os, re, shutil, tempfile
 import numpy as np
 from PIL import Image, ImageDraw
 
 GRID = (204, 204, 204)
+
+def find_tesseract():
+    """The tesseract program: on PATH, else where its Windows installer puts it."""
+    exe = shutil.which('tesseract')
+    if exe: return exe
+    for base in (os.environ.get('ProgramFiles'), os.environ.get('ProgramFiles(x86)'), r'C:\Program Files'):
+        if base and os.path.isfile(os.path.join(base, 'Tesseract-OCR', 'tesseract.exe')):
+            return os.path.join(base, 'Tesseract-OCR', 'tesseract.exe')
+    raise RuntimeError('tesseract not found: put it on PATH or install it in C:\\Program Files\\Tesseract-OCR')
+
+_tesseract = None
+def tesseract(img, *args):
+    """What tesseract prints for a PIL image, args after 'stdout'. The image goes through a temporary file of its own
+    (tempfile: Windows has no /tmp, and two runs at once do not share it), removed afterwards."""
+    global _tesseract
+    if _tesseract is None: _tesseract = find_tesseract()
+    fd, path = tempfile.mkstemp(prefix='klirr_ocr_', suffix='.png'); os.close(fd)
+    try:
+        img.save(path)
+        return subprocess.run([_tesseract, path, 'stdout', *args], capture_output=True, text=True).stdout
+    finally:
+        os.remove(path)
 
 def load(path):
     im = Image.open(path)
@@ -33,10 +55,8 @@ def gridlines(a, axis, frac=0.2):
     return [float(np.mean(r)) for r in runs(list(idx))], prof
 
 def ocr_numbers(img, psm=11):
-    tmp = '/tmp/_ocr.png'
     big = img.resize((img.width * 3, img.height * 3), Image.LANCZOS)
-    big.save(tmp)
-    out = subprocess.run(['tesseract', tmp, 'stdout', '--psm', str(psm), '-c', 'tessedit_char_whitelist=-0123456789.', 'tsv'], capture_output=True, text=True).stdout
+    out = tesseract(big, '--psm', str(psm), '-c', 'tessedit_char_whitelist=-0123456789.', 'tsv')
     res = []
     for line in out.splitlines()[1:]:
         p = line.split('\t')
@@ -73,8 +93,7 @@ def extract(cfg, outdir):
             crop = im.crop(box).convert('L')
             crop = crop.resize((crop.width * scale, crop.height * scale), Image.LANCZOS).point(lambda v, t=thr: 0 if v < t else 255)
             pad = Image.new('L', (crop.width + 60, crop.height + 60), 255); pad.paste(crop, (30, 30))
-            pad.save('/tmp/_ocr1.png')
-            t = subprocess.run(['tesseract', '/tmp/_ocr1.png', 'stdout', '--psm', str(psm), '-c', 'tessedit_char_whitelist=-0123456789.'], capture_output=True, text=True).stdout.strip().replace(' ', '')
+            t = tesseract(pad, '--psm', str(psm), '-c', 'tessedit_char_whitelist=-0123456789.').strip().replace(' ', '')
             if re.fullmatch(r'-?\d+(\.\d+)?', t):
                 v = float(t)
                 if allowed is None or any(abs(v - a) < 1e-9 for a in allowed): votes[v] = votes.get(v, 0) + 1
