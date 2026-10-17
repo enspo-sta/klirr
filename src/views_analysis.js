@@ -170,7 +170,7 @@ App.views.distortion = (() => {
     const d = r.mech.data; const idx = mechWhich === 'H2' ? 0 : mechWhich === 'H3' ? 1 : -1;
     const val = (hd, thd) => ratioVal(idx < 0 ? thd : hd[idx], st.unit);
     const series = [{ id: 'all', name: 'All mechanisms', color: GREY, width: 2.5, pts: d.f.map((f, i) => [f, val(d.hd[i], d.thd[i])]) }];
-    for (const k of Object.keys(d.mech)) series.push({ id: k, name: MECH[k].name, color: MECH[k].color, width: 1.8, pts: d.f.map((f, i) => [f, val(d.mech[k].hd[i], d.mech[k].thd[i])]) });
+    for (const k of Object.keys(d.mech)) series.push({ id: k, name: MECH[k].name, color: MECH[k].color, dash: MECH[k].dash, width: 1.8, pts: d.f.map((f, i) => [f, val(d.mech[k].hd[i], d.mech[k].thd[i])]) });
     App._hdM.setData(series, { x: { min: d.f[0], max: d.f[d.f.length - 1] } });
   }
   async function showWaveform(f) {

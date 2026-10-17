@@ -2,7 +2,7 @@
 
 Run from anywhere: python3 build_library.py. Every number comes from research/lsi/*/extracted.json (pixel extraction),
 research/lsi/outhd/hd_extracted.json (measured harmonic distortion), research/lsi/xp/fit_ranges.json (Klippel's fit range
-±xp, measured from the plots) and research/erin/index.json (the review pages' small-signal tables, read as text).
+±xp, measured from the plots), research/lsi/outli/extracted.json (Klippel's inductance over current L(X=0, I)) and research/erin/index.json (the review pages' small-signal tables, read as text).
 Nothing here is estimated except the SB34NRXL75-8 entry, which says so.
 """
 import json, os, re
@@ -14,6 +14,8 @@ for f in [R('lsi', 'outc', 'extracted.json'), R('lsi', 'out', 'extracted.json')]
 hd = {r['name']: r for r in json.load(open(R('lsi', 'outhd', 'hd_extracted.json')))}
 erin = json.load(open(R('erin', 'index.json')))
 xp = json.load(open(R('lsi', 'xp', 'fit_ranges.json')))['drivers']  # Klippel's fit range ±xp, measured from the plots by research/lsi/xp_extract.py
+li = {r['name'][:-3]: r for r in json.load(open(R('lsi', 'outli', 'extracted.json')))}  # inductance at rest against current, 2020 reviews only
+LI_RET = '2026-10-17'
 RET = '2026-09-26'
 IMG = {
  'ptt8': ('purifi_ptt80x04-nab-02', {'all': 'https://dl.dropboxusercontent.com/s/y2nj3jb722e3jq8/LSI.png?dl=0'}),
@@ -70,11 +72,18 @@ for key, (brand, model, role, size) in META.items():
         r = ex[key + '_' + c]
         nl[c] = {'type': 'points', 'x': r['x'], 'y': r['y'], 'fit': 10}
         ext[c] = {'image': imgs.get(c, imgs.get('all')), 'crop': r['crop'], 'x_axis': r['x_axis'], 'y_axis': r['y_axis'], 'range_mm': [round(r['range'][0], 2), round(r['range'][1], 2)]}
+    what = 'Small-signal parameters from the review\'s Klippel LPM table (text); Bl(x), Kms(x) and Le(x) pixel-extracted from the review\'s Klippel LSI plots.'
+    if key in li:
+        r = li[key]
+        nl['li'] = {'type': 'points', 'x': r['x'], 'y': r['y'], 'fit': 4, 'unit': 'A'}
+        ext['li'] = {'image': B + IMG[key][1]['le'].split(B)[1].rsplit('/', 1)[0] + '/Inductance%20over%20current%20L(X=0,%20I).png', 'crop': r['crop'], 'x_axis': r['x_axis'], 'y_axis': r['y_axis'],
+                     'range_A': [round(r['range'][0], 2), round(r['range'][1], 2)], 'retrieved': LI_RET}
+        what += f' Le(i), the inductance at rest against current, pixel-extracted from the review\'s L(X=0, I) plot (retrieved {LI_RET}).'
     d = {
         'id': 'eac-' + key, 'brand': brand, 'model': model, 'label': f'{brand} {model}', 'role': role, 'size_in': size,
         'badge': 'measured', 'ts': ts, 'nl': nl,
         'sources': [{'sid': 's1', 'publisher': "Erin's Audio Corner", 'title': info['title'], 'url': info['url'], 'retrieved': RET,
-                     'what': 'Small-signal parameters from the review\'s Klippel LPM table (text); Bl(x), Kms(x) and Le(x) pixel-extracted from the review\'s Klippel LSI plots.'}] + EXTRA_SOURCE.get(key, []),
+                     'what': what}] + EXTRA_SOURCE.get(key, []),
         'extraction': {'method': 'pixel', 'tool': 'OCR-read tick labels paired with detected gridlines, least-squares axis fit (every labelled tick is a check tick, max residual < 1 px), exact-colour mask, per-column continuity tracking, 161-point uniform resample', 'curves': ext,
                        'fit_range': {'xp_mm': xp[key]['xp_mm'], 'how': "Extent of the black segment the Klippel plots draw for the fit range (legend 'Xp- < X < Xp+'), measured with the extraction's axis calibration by research/lsi/xp_extract.py, median of the three plots."}},
         'fitRange': xp[key]['xp_mm'],

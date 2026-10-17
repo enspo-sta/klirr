@@ -111,6 +111,54 @@ for (const [id, dl] of Object.entries(DRIVE)) {
 mtBands.sort((a, b) => a - b);
 const mtMedian = mtBands[Math.floor(mtBands.length / 2)], mtMax = mtBands[mtBands.length - 1];
 console.log(`\nmultitone ${MT.fLo}–${MT.fHi} Hz at the top legend voltage: the option moves the total by at most ${mtTotal.toFixed(1)} dB, third-octave bands by a median ${mtMedian.toFixed(1)} dB and at most ${mtMax.toFixed(1)} dB`);
+// Midrange, 300 to 2000 Hz, default stiffness: the model with and without Klippel's inductance against current, Le(i)
+const MID = [300, 500, 700, 1000, 1500, 2000];
+out.midrange = { freqs: MID, drivers: {} };
+const midSum = (rows, sel) => { // mean and mean absolute of simulated minus measured over the selected frames
+  const s = {}; for (const v of ['without', 'with']) for (const q of ['H2', 'H3']) { let a = 0, b = 0, n = 0; rows.forEach((fr, k) => { if (!sel(k)) return; for (const p of fr[v]) { const e = p['sim' + q] - p['meas' + q]; if (!isFinite(e)) continue; a += e; b += Math.abs(e); n++; } }); s[v + q] = { mean: +(a / n).toFixed(2), abs: +(b / n).toFixed(2), n }; }
+  return s;
+};
+for (const [id, dl] of Object.entries(DRIVE)) {
+  const base = lib.find((d) => d.id === id);
+  const noLi = JSON.parse(JSON.stringify(base)); delete noLi.nl.li;
+  const su = (d) => ({ id: 'a', ways: [{ driver: d, count: 1, enclosure: { type: 'ib' }, filters: [] }], space: 'half', distance: 1 });
+  const ys = base.nl.li.y, y0 = API.compileDriver(base).curves.li.y0;
+  const rows = dl.hd_frames.map((fr) => {
+    const m = meas[fr.name], row = { level_db: fr.level_db, V: fr.V };
+    for (const [v, d] of [['without', noLi], ['with', base]]) {
+      const r = API.hdSweep({ setups: [su(d)], freqs: MID, level: { mode: 'voltage', value: fr.V }, harmonics: 3, mechanisms: false }, null)[0];
+      row[v] = MID.map((f, i) => ({ f, simH2: +dB(r.hd[i][0]).toFixed(2), simH3: +dB(r.hd[i][1]).toFixed(2), measH2: +at(m.H2, f).toFixed(2), measH3: +at(m.H3, f).toFixed(2), irms: +r.ways[i][0].irms.toFixed(2) }));
+    }
+    return row;
+  });
+  out.midrange.drivers[id] = { liChangePct: +((Math.max(...ys) - Math.min(...ys)) / y0 * 100).toFixed(1), range_A: [base.nl.li.x[0], base.nl.li.x[base.nl.li.x.length - 1]], frames: rows,
+    high: midSum(rows, (k) => k >= 3), all: midSum(rows, () => true) };
+}
+console.log(`\nmidrange ${MID[0]}–${MID[MID.length - 1]} Hz, sim − measured, three highest levels, mean (mean absolute), without → with Le(i):`);
+for (const [id, d] of Object.entries(out.midrange.drivers)) {
+  const h = d.high, f = (o) => `${o.mean.toFixed(1)} (${o.abs.toFixed(1)})`;
+  console.log(`${id.slice(4).padEnd(9)} Le(i) varies ${d.liChangePct} % over ${d.range_A.map((v) => v.toFixed(1)).join(' to ')} A | H2 ${f(h.withoutH2)} → ${f(h.withH2)} | H3 ${f(h.withoutH3)} → ${f(h.withH3)} | all levels H3 ${f(d.all.withoutH3)} → ${f(d.all.withH3)}`);
+}
+// how much the fit order of the Le(i) curve moves H3 at the highest level, 500 to 2000 Hz
+let liOrder = 0;
+for (const [id, dl] of Object.entries(DRIVE)) {
+  const base = lib.find((d) => d.id === id); const fr = dl.hd_frames[dl.hd_frames.length - 1];
+  const h3 = [2, 4, 6, 8].map((fit) => { const d = JSON.parse(JSON.stringify(base)); d.nl.li.fit = fit; const r = API.hdSweep({ setups: [{ id: 'a', ways: [{ driver: d, count: 1, enclosure: { type: 'ib' }, filters: [] }], space: 'half', distance: 1 }], freqs: [500, 1000, 2000], level: { mode: 'voltage', value: fr.V }, harmonics: 3, mechanisms: false }, null)[0]; return r.hd.map((h) => dB(h[1])); });
+  for (let i = 0; i < 3; i++) { const v = h3.map((q) => q[i]); liOrder = Math.max(liOrder, Math.max(...v) - Math.min(...v)); }
+}
+// how much Le(i) moves H2 and H3 in the bass (30 to 100 Hz), every level
+let liBass = 0;
+for (const [id, dl] of Object.entries(DRIVE)) {
+  const base = lib.find((d) => d.id === id); const noLi = JSON.parse(JSON.stringify(base)); delete noLi.nl.li;
+  const su = (d) => ({ id: 'a', ways: [{ driver: d, count: 1, enclosure: { type: 'ib' }, filters: [] }], space: 'half', distance: 1 });
+  const fb = FREQS.filter((f) => f <= BASS);
+  for (const fr of dl.hd_frames) {
+    const [a, b] = [noLi, base].map((d) => API.hdSweep({ setups: [su(d)], freqs: fb, level: { mode: 'voltage', value: fr.V }, harmonics: 3, mechanisms: false }, null)[0]);
+    fb.forEach((f, i) => { for (const k of [0, 1]) liBass = Math.max(liBass, Math.abs(dB(a.hd[i][k]) - dB(b.hd[i][k]))); });
+  }
+}
+console.log(`Le(i) moves H2 and H3 at 30 to 100 Hz by at most ${liBass.toFixed(1)} dB`);
+console.log(`Le(i) fit order 2 to 8 moves H3 at the highest level (500 to 2000 Hz) by at most ${liOrder.toFixed(1)} dB`);
 // the large-signal curve's stiffness at rest as a share of the small-signal table, on every measured driver
 const ratios = lib.filter((d) => d.badge === 'measured' && d.nl && d.nl.kms).map((d) => { const c = API.compileDriver(d); return c.curves.kms.y0 * 1e3 / c.ts.Kms; });
 const rLo = Math.round(Math.min(...ratios) * 100), rHi = Math.round(Math.max(...ratios) * 100);
@@ -137,6 +185,21 @@ const failures = [];
   const mt = after.match(/total by at most ([\d.]+) dB, and its third-octave bands by a median of ([\d.]+) dB and at most ([\d.]+) dB/);
   const mtWant = [mtTotal, mtMedian, mtMax].map((x) => x.toFixed(1));
   if (!mt || mt.slice(1).join() !== mtWant.join()) failures.push(`multitone sentence in the Guide says ${mt && mt.slice(1).join(', ')}, the engine gives ${mtWant.join(', ')}`);
+  // the Guide's table "Inductance against current in the midrange"
+  const b = html.indexOf('Inductance against current in the midrange'), msec = html.slice(b, html.indexOf('<h2>', b));
+  const LBL = { 'eac-ptt4w': 'PTT4.0W04-01A', 'eac-sb17cac': 'SB17CAC35-4', 'eac-ptt65w': 'PTT6.5W04-01A', 'eac-ss18wu': '18WU/4741T-00', 'eac-dynmw182': 'MW182' };
+  for (const [id, d] of Object.entries(out.midrange.drivers)) {
+    const m = msec.match(new RegExp('<tr><td>' + LBL[id].replace(/[./]/g, '\\$&') + '</td>((?:<td class="n">[^<]*</td>){5})</tr>'));
+    if (!m) { failures.push(`no row for ${LBL[id]} in the Guide's midrange table`); continue; }
+    const cells = [...m[1].matchAll(/<td class="n">([^<]*)<\/td>/g)].map((c) => c[1]);
+    const f = (o) => `${fmt(o.mean)} (${o.abs.toFixed(1)})`;
+    const want = [`${d.liChangePct.toFixed(1)} %`, f(d.high.withoutH2), f(d.high.withH2), f(d.high.withoutH3), f(d.high.withH3)];
+    want.forEach((w, i) => { if (cells[i] !== w) failures.push(`${LBL[id]}, midrange column ${i + 1}: the Guide says ${cells[i]}, the engine gives ${w}`); });
+  }
+  const lb = msec.match(/Below 100 Hz Le\(i\) moves H2 and H3 by at most ([\d.]+) dB/);
+  if (!lb || lb[1] !== liBass.toFixed(1)) failures.push(`Le(i) bass sentence in the Guide says ${lb && lb[1]}, the engine gives ${liBass.toFixed(1)}`);
+  const lo = msec.match(/fit orders 2 to 8 move these H3 results by at most ([\d.]+) dB/);
+  if (!lo || lo[1] !== liOrder.toFixed(1)) failures.push(`Le(i) fit-order sentence in the Guide says ${lo && lo[1]}, the engine gives ${liOrder.toFixed(1)}`);
   const rs = html.match(/is (\d+) to (\d+) % of the small-signal table on all (\w+) measured drivers/);
   if (!rs || +rs[1] !== rLo || +rs[2] !== rHi || rs[3] !== 'nine' || ratios.length !== 9) failures.push(`stiffness ratio sentence in the Guide says ${rs && rs.slice(1).join(', ')}, the library gives ${rLo}, ${rHi} on ${ratios.length}`);
 }

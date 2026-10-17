@@ -86,7 +86,8 @@
   }
 
   // ------------------------------------------------------------------ driver curves
-  // A curve spec describes Bl (T·m), Kms (N/mm) or Le (mH) against displacement x in mm.
+  // A curve spec describes Bl (T·m), Kms (N/mm) or Le (mH) against displacement x in mm, or (kind 'li') the
+  // inductance Le (mH) at rest against current in A, as Klippel's L(X=0, I) plot gives it.
   // The engine uses only the SHAPE r(x) = y(x)/y(0); absolute values come from the small-signal parameters.
   function buildCurve(spec, kind) {
     if (!spec || spec.type === 'none') return null;
@@ -178,6 +179,7 @@
     const cBl = buildCurve(D.nl && D.nl.bl, 'bl');
     const cK = buildCurve(D.nl && D.nl.kms, 'kms');
     const cL = buildCurve(D.nl && D.nl.le, 'le');
+    const cLi = D.nl && D.nl.li && (D.nl.li.type === 'points' || D.nl.li.type === 'poly') ? buildCurve(D.nl.li, 'li') : null;
     // absolute values: the small-signal table by default; optionally the large-signal curve value at x = 0
     const abs = D.abs || {};
     const kTable = ts.Kms, blTable = ts.Bl;
@@ -211,10 +213,26 @@
     }
     // minimum inductance ratio within the data range (for step-size choice)
     let minL = 1; for (let k = 0; k < N; k++) { const xm = x0 + k * dx; if (xm >= Math.max(dataLo, -refX) && xm <= Math.min(dataHi, refX)) minL = Math.min(minL, tL[k]); }
+    // inductance against current, g(i) = Le(0, i) / Le(0, 0), and the incremental factor g + i·g' that d(Le·i)/dt needs;
+    // held at its end values outside the measured current range
+    let li = null;
+    if (cLi) {
+      const Imax = Math.max(20, 3 * Math.max(Math.abs(cLi.lo), Math.abs(cLi.hi))), NI = 8193, di = 2 * Imax / (NI - 1);
+      const g = new Float64Array(NI), gi = new Float64Array(NI);
+      for (let k = 0; k < NI; k++) g[k] = cLi.r(-Imax + k * di);
+      let minG = 1;
+      for (let k = 0; k < NI; k++) {
+        const a = Math.max(0, k - 1), b = Math.min(NI - 1, k + 1), I = -Imax + k * di;
+        gi[k] = g[k] + I * (g[b] - g[a]) / ((b - a) * di);
+        if (I >= cLi.lo && I <= cLi.hi) minG = Math.min(minG, gi[k]);
+      }
+      li = { i0: -Imax, inv: 1 / di, n: NI, g, gi, range: [cLi.lo, cLi.hi] };
+      minL *= Math.min(1, minG);
+    }
     return {
       id: D.id, label: D.label || [D.brand, D.model].filter(Boolean).join(' ') || D.id, ts, der,
-      curves: { bl: cBl, kms: cK, le: cL }, r: { bl: rBl, kms: rK, le: rL },
-      tab: { x0: x0 * 1e-3, inv: 1 / (dx * 1e-3), n: N, Bl: tBl, F: tF, L: tL, dL: tdL },
+      curves: { bl: cBl, kms: cK, le: cL, li: cLi }, r: { bl: rBl, kms: rK, le: rL },
+      tab: { x0: x0 * 1e-3, inv: 1 / (dx * 1e-3), n: N, Bl: tBl, F: tF, L: tL, dL: tdL }, li,
       dataRange: [dataLo, dataHi], fitRange: fitRangeOf(D, dataLo, dataHi), minL,
     };
   }
@@ -490,8 +508,8 @@
   }
 
   // ------------------------------------------------------------------ time-domain simulation
-  const NL_ALL = { bl: true, kms: true, le: true, doppler: true, air: true, port: true, pr: true };
-  const NL_NONE = { bl: false, kms: false, le: false, doppler: false, air: false, port: false, pr: false };
+  const NL_ALL = { bl: true, kms: true, le: true, li: true, doppler: true, air: true, port: true, pr: true };
+  const NL_NONE = { bl: false, kms: false, le: false, li: false, doppler: false, air: false, port: false, pr: false };
 
   function chooseFs(cs, fMax) {
     let lam = 0;
@@ -516,7 +534,8 @@
     const dly = Math.round(cw.delay * 2 * fs); this.dline = new Float64Array(dly + 1); this.dpos = 0; this.dly = dly;
     this.y = new Float64Array(9); this.k1 = new Float64Array(9); this.k2 = new Float64Array(9); this.k3 = new Float64Array(9); this.k4 = new Float64Array(9); this.yt = new Float64Array(9);
     this.lastU = null;
-    const nlBl = !!flags.bl && !!cd.curves.bl, nlK = !!flags.kms && !!cd.curves.kms, nlL = !!flags.le && !!cd.curves.le;
+    const nlBl = !!flags.bl && !!cd.curves.bl, nlK = !!flags.kms && !!cd.curves.kms, nlL = !!flags.le && !!cd.curves.le, nlLi = !!flags.li && !!cd.li;
+    const LI = cd.li, LI0 = LI ? LI.i0 : 0, LIINV = LI ? LI.inv : 0, LIN2 = LI ? LI.n - 2 : 0;
     const nlAir = !!flags.air && e.type !== 'ib', nlPort = !!flags.port && e.type === 'vented' && e.xi > 0, nlPR = !!flags.pr && e.type === 'pr' && e.prXlim > 0;
     this.doppler = !!flags.doppler;
     const X0 = T.x0, INV = T.inv, NT2 = T.n - 2, tBl = T.Bl, tF = T.F, tL = T.L, tdL = T.dL;
@@ -558,8 +577,14 @@
         d[1] = 0;
         if (current) i = u / ReCold; else if (!hasLe) i = (u - Bl * v) / ReE;
       }
-      if (!current && hasLe) d[0] = (u - ReE * i - dLe * v * i - u2 - Bl * v) / Le; else d[0] = 0;
-      fRel += 0.5 * i * i * dLe;
+      // Le(x, i) = Le(x)·g(i) (Klippel): d(Le·i)/dt = Le·(g + i·g')·di/dt + i·g·dLe/dx·v, reluctance force ½·i²·g·dLe/dx
+      let gI = 1, giI = 1;
+      if (nlLi) {
+        const fi = (i - LI0) * LIINV; let k = Math.floor(fi); if (k < 0) k = 0; else if (k > LIN2) k = LIN2; const fr = fi - k;
+        gI = LI.g[k] + fr * (LI.g[k + 1] - LI.g[k]); giI = LI.gi[k] + fr * (LI.gi[k + 1] - LI.gi[k]);
+      }
+      if (!current && hasLe) d[0] = (u - ReE * i - gI * dLe * v * i - u2 - Bl * v) / (Le * giI); else d[0] = 0;
+      fRel += 0.5 * i * i * gI * dLe;
       self.iOut = i;
       let pb = 0;
       if (box) {
@@ -834,6 +859,7 @@
     if (any((w) => w.cd.curves.bl)) list.push('bl');
     if (any((w) => w.cd.curves.kms)) list.push('kms');
     if (any((w) => w.cd.curves.le)) list.push('le');
+    if (any((w) => w.cd.curves.li)) list.push('li');
     list.push('doppler');
     if (any((w) => w.enc.type !== 'ib')) list.push('box');
     return list;
@@ -1207,6 +1233,10 @@
       const c = cd.curves[k]; if (!c) continue;
       curves[k] = { x: Array.from(xs), r: Array.from(xs, (x) => cd.r[k](x)), lo: c.lo, hi: c.hi, fitRms: c.info.fitRms, fitOrder: c.info.fitOrder, y0: c.y0 };
       if (D.nl[k].type === 'points') { curves[k].px = D.nl[k].x.slice(); curves[k].py = D.nl[k].y.map((y) => (k === 'kms' && D.nl[k].quantity === 'cms' ? 1 / y : y) / c.y0); }
+    }
+    if (cd.curves.li) { // inductance at rest against current, over the measured range and a little beyond
+      const c = cd.curves.li, Ri = 1.25 * Math.max(-c.lo, c.hi), is = linspace(-Ri, Ri, 241);
+      curves.li = { x: Array.from(is), r: Array.from(is, (i) => c.r(i)), lo: c.lo, hi: c.hi, fitRms: c.info.fitRms, fitOrder: c.info.fitOrder, y0: c.y0, px: D.nl.li.x.slice(), py: D.nl.li.y.map((y) => y / c.y0) };
     }
     return { ts: cd.ts, der: cd.der, lim, curves, dataRange: cd.dataRange, fitRange: cd.fitRange };
   }

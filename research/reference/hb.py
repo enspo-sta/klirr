@@ -99,6 +99,13 @@ def driver_model(d, abs_kms='table'):
         ts['Kms'] = ck.y0 * 1e3
     # 'offset': the small-signal stiffness at rest plus the curve's change in N/m, Kms + Kc(x) - Kc(0)
     ts['kOff'] = ck.y0 * 1e3 / ts['Kms'] if abs_kms == 'offset' and not ck.const else None
+    # inductance at rest against current (A), Le(x, i) = Le(x) g(i), held at its end values outside the measured range
+    li = nl.get('li')
+    if li:
+        cli = Curve(li, 'li')
+        ts['g'] = lambda i: cli.f(np.clip(i, cli.lo, cli.hi)) / cli.y0
+    else:
+        ts['g'] = None
     return ts, cb, ck, cl
 
 
@@ -159,7 +166,6 @@ def solve(model, enc, f, V, K=24, Nt=None, drive='voltage', tol=1e-11, maxit=60,
         rb = cb.r(x); rk = ck.r(x); rl = cl.r(x); drl = cl.dr(x)
         if ts['kOff'] is not None: rk = 1 + ts['kOff'] * (rk - 1)
         Bl = Bl0 * rb; Fk = K0 * rk * x
-        Le = Le0 * rl; dLe = Le0 * drl
         i2 = B @ U['i2'] if 'i2' in U else np.zeros(Nt)
         if drive == 'current':
             i = u / Re
@@ -170,6 +176,8 @@ def solve(model, enc, f, V, K=24, Nt=None, drive='voltage', tol=1e-11, maxit=60,
                 i = (u - Bl * v + R20 * rl * i2) / (Re + R20 * rl)
             else:
                 i = (u - Bl * v) / Re
+        g = ts['g'](i) if ts['g'] is not None else 1.0
+        Le = Le0 * rl * g; dLe = Le0 * drl * g   # Le(x, i): the flux Le i is differentiated as a whole below
         res = []
         uL2 = R20 * rl * (i - i2) if hasL2 else np.zeros(Nt)
         if 'i' in U:

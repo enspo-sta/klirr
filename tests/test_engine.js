@@ -265,5 +265,21 @@ const dB = (x) => 20 * Math.log10(x);
     check(lin[0].every((s, i) => Math.abs(s - lin[1][i]) < 1e-9), `T12 ${id}: the offset option changes the linear response`);
   }
 }
+// ---------- T13: inductance against current, Le(i)
+{
+  log('T13 inductance against current: a flat Le(i) changes nothing; the measured one is a mechanism of its own');
+  const lib = require('../library.json');
+  const base = lib.find((x) => x.id === 'eac-sb17cac');
+  const flat = clone(base); flat.nl.li = { type: 'points', x: [-4, -2, 0, 2, 4], y: [0.11, 0.11, 0.11, 0.11, 0.11], fit: 4 };
+  const none = clone(base); delete none.nl.li;
+  const run = (d, mech) => API.hdSweep({ setups: [setupOf(d)], freqs: [60, 1000], level: { mode: 'voltage', value: 8 }, harmonics: 3, mechanisms: !!mech }, null)[0];
+  const a = run(none), b = run(flat), c = run(base, true);
+  a.hd.forEach((h, i) => h.forEach((v, k) => check(Math.abs(dB(v) - dB(b.hd[i][k])) < 1e-6, `T13 a flat Le(i) moves H${k + 2} at ${a.f[i]} Hz`)));
+  check(!!c.mech.li, 'T13 Le(i) is not listed as a mechanism for a driver that has the curve');
+  const h3 = dB(c.mech.li.hd[1][1]), h3none = dB(a.hd[1][1]);
+  log(`   SB17CAC35-4 at 1 kHz, 8 V: H3 ${h3none.toFixed(1)} dB without Le(i), ${dB(c.hd[1][1]).toFixed(1)} dB with it, ${h3.toFixed(1)} dB from Le(i) alone`);
+  check(h3 > h3none + 20, 'T13 the measured Le(i) should raise H3 at 1 kHz by more than 20 dB');
+  check(!API.compileSetup({ id: 's', ways: [{ driver: none, count: 1, enclosure: { type: 'ib' }, filters: [] }], space: 'half', distance: 1 }).ways[0].cd.li, 'T13 a driver without the curve has Le(i)');
+}
 log('total time', Date.now() - t0, 'ms');
 if (failures.length) { log(failures.length + ' check(s) failed'); process.exit(1); } else log('all checks passed');

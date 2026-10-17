@@ -10,4 +10,5 @@ research/lsi/out/*.png
 research/lsi/outc/*.png
 research/lsi/outhd/*.png
 research/lsi/outhd2020/*.png
+research/lsi/outli/*.png
 .DS_Store

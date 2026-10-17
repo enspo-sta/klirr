@@ -35,7 +35,7 @@ function fmtRatio(r, unit) { return unit === 'pct' ? fmtPct(r) : fmt(db20(r), 1)
 const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const PALETTE = ['#56b6c2', '#d9a441', '#e06c75', '#98c379', '#c678dd'];
 const GREY = '#d0d4dc';
-const MECH = { bl: { name: 'Bl(x)', color: '#56b6c2' }, kms: { name: 'Kms(x)', color: '#d9a441' }, le: { name: 'Le(x) + reluctance', color: '#e06c75' }, doppler: { name: 'Doppler', color: '#98c379' }, box: { name: 'Box air + port', color: '#c678dd' } };
+const MECH = { bl: { name: 'Bl(x)', color: '#56b6c2' }, kms: { name: 'Kms(x)', color: '#d9a441' }, le: { name: 'Le(x) + reluctance', color: '#e06c75' }, li: { name: 'Le(i)', color: '#e06c75', dash: [5, 3] }, doppler: { name: 'Doppler', color: '#98c379' }, box: { name: 'Box air + port', color: '#c678dd' } };
 const DASH = { H2: [], H3: [7, 5], H4: [2, 4], H5: [10, 4, 2, 4], THD: [1, 3], d2: [], d3: [7, 5] };
 
 function toast(msg, ms = 2600) {
