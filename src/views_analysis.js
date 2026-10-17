@@ -122,7 +122,8 @@ App.views.distortion = (() => {
       if (m) {
         for (const hn of ['H2', 'H3']) if (m.series[hn] && st.show[hn]) series.push({ id: 'meas' + hn, name: 'Measured ' + hn + ' (' + d.model + ')', color: GREY, width: 1.5, dash: hn === 'H2' ? [] : [6, 4], pts: m.series[hn].map((p) => [p[0], unit === 'pct' ? Math.pow(10, p[1] / 20) * 100 : p[1]]) });
         const src = (d.sources || []).find((x) => x.sid === m.source) || (d.sources || [])[0];
-        noteHost.append(h('p', { class: 'hint', style: { marginTop: '8px' } }, 'Grey: ', m.conditions, '. ', src ? h('a', { href: src.url, target: '_blank', rel: 'noopener' }, src.publisher + ' review') : null, m.image ? [', ', h('a', { href: m.image, target: '_blank', rel: 'noopener' }, 'original plot')] : null, '. Pixel-extracted; the simulation above uses the level you set, so match it to the measurement level to compare.'));
+        // built-in curves (and copies of them) carry their pixel extraction; imported ones say how they were taken in their conditions
+        noteHost.append(h('p', { class: 'hint', style: { marginTop: '8px' } }, 'Grey: ', m.conditions, '. ', src ? h('a', { href: src.url, target: '_blank', rel: 'noopener' }, src.publisher + (/review/i.test(src.title || '') ? ' review' : '')) : null, m.image ? [', ', h('a', { href: m.image, target: '_blank', rel: 'noopener' }, 'original plot')] : null, '. ', m.extraction ? 'Pixel-extracted; the' : 'The', ' simulation above uses the level you set, so match it to the measurement level' + (m.level_db != null ? ' (' + fmt(m.level_db, 1) + ' dB at 1 m)' : '') + ' to compare.'));
       }
     }
     const fr = r.data[0] ? [r.data[0].f[0], r.data[0].f[r.data[0].f.length - 1]] : [20, 20000];

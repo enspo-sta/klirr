@@ -405,14 +405,15 @@ App.views.drivers = (() => {
     return h('div', { class: 'card' }, h('div', { class: 'card-h' }, h('div', { class: 't' }, h('span', { class: 'kicker' }, 'Edit'), h('h3', null, 'Large-signal curves'))), host);
   }
   function importCard() {
-    const ta = h('textarea', { id: 'imp-text', rows: '5', placeholder: 'Paste Klirr JSON or your driver database (drivers.json)' });
-    const file = h('input', { id: 'imp-file', type: 'file', accept: '.json,application/json' });
+    const ta = h('textarea', { id: 'imp-text', rows: '5', placeholder: 'Paste Klirr JSON, a driver file from your driver database, or a JSON export from its viewer' });
+    const file = h('input', { id: 'imp-file', type: 'file', accept: '.json,application/json', multiple: true });
     const out = h('p', { class: 'hint', id: 'imp-msg' }, importMsg); // kept across rebuilds, which a sync from the account store can trigger
-    file.addEventListener('change', async () => { const f = file.files && file.files[0]; if (!f) return; ta.value = await f.text(); });
+    // several files (one per driver, as database/drivers holds them) are imported as one list
+    file.addEventListener('change', async () => { const chosen = [...(file.files || [])]; if (!chosen.length) return; const t = await Promise.all(chosen.map((f) => f.text())); ta.value = t.length === 1 ? t[0] : '[\n' + t.join(',\n') + '\n]'; });
     const btn = h('button', { class: 'btn sm primary', type: 'button', onclick: () => { try { importMsg = importText(ta.value); out.textContent = importMsg; ta.value = ''; renderList(); renderDetail(); refreshAll(); } catch (e) { importMsg = e.message; out.textContent = e.message; } } }, 'Import');
     return h('div', { class: 'card' }, h('details', { class: 'sec', open: !!importMsg, style: { borderTop: 0, paddingTop: 0 } }, h('summary', null, 'Import drivers or setups'),
       h('div', { class: 'fs-body' }, ta, file, h('div', { class: 'btn-row' }, btn, h('button', { class: 'btn sm ghost', type: 'button', onclick: exportBundle }, 'Export yours')), out,
-        h('p', { class: 'hint' }, 'Accepted: a Klirr export, single Klirr driver files, and the driver database format with a drivers list (small-signal "ts" and "hd-frequency" measurements). Imported measurements appear as overlays in Distortion.'))));
+        h('p', { class: 'hint' }, 'Accepted: a Klirr export or Klirr driver file; from ', h('a', { href: DB_SITE, target: '_blank', rel: 'noopener' }, 'your driver database'), ', the driver files in database/drivers (choose several at once) or a JSON export from its viewer ("JSON" on a chart, or "Export all curves" on a driver page); and the older drivers.json. From the database Klirr takes the small-signal parameters and the harmonic distortion sets, which appear as overlays in Distortion; superseded sets and sets measured on another driver are left out.'))));
   }
   return { build, onShow() { build(); } };
 })();
@@ -466,6 +467,7 @@ function completeTS(ts) {
   const Sd = ts.Sd ? ts.Sd * 1e-4 : null;
   if (!ts.Cms && ts.Vas && Sd) ts.Cms = ts.Vas * 1e-3 / (kappa * Sd * Sd) * 1e3;
   if (!ts.Mms && ts.fs && ts.Cms) ts.Mms = 1 / (Math.pow(2 * Math.PI * ts.fs, 2) * ts.Cms * 1e-3) * 1e3;
+  if (!ts.Cms && ts.fs && ts.Mms) ts.Cms = 1 / (Math.pow(2 * Math.PI * ts.fs, 2) * ts.Mms * 1e-3) * 1e3; // a datasheet with neither Cms nor Vas
   if (!ts.Rms && ts.fs && ts.Mms) {
     let Qms = ts.Qms;
     if (!Qms && ts.Qts && ts.Qes && ts.Qes > ts.Qts) Qms = 1 / (1 / ts.Qts - 1 / ts.Qes);
@@ -483,33 +485,172 @@ function parseKlippel(text) {
   for (const k in out) out[k] = Array.from(out[k], (v) => (v == null ? 0 : v));
   return out;
 }
+// document ids in the account store allow letters, digits and _ - . ~ : @ + only
+function safeDocId(v) { const t = String(v || '').replace(/[^A-Za-z0-9_\-.~:@+]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 120); return t && t !== '.' && t !== '..' ? t : null; }
 function importText(text) {
   if (!text.trim()) throw new Error('Paste some JSON first.');
   let data; try { data = JSON.parse(text); } catch (e) { throw new Error('This is not valid JSON: ' + e.message); }
-  let nD = 0, nS = 0, skipped = 0, incomplete = 0; const remap = {};
-  // document ids in the account store allow letters, digits and _ - . ~ : @ + only
-  const safeId = (v) => { const t = String(v || '').replace(/[^A-Za-z0-9_\-.~:@+]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 120); return t && t !== '.' && t !== '..' ? t : null; };
-  const addDriver = (d) => { const old = d.id; const sid = safeId(d.id); d.id = sid && !LIB.some((x) => x.id === sid) ? sid : uid('drv'); if (old && old !== d.id) remap[old] = d.id; delete d.builtin; if (!(d.ts && d.ts.Mms && (d.ts.Cms || d.ts.Kms) && d.ts.Rms != null)) incomplete++; const i = App.userDrivers.findIndex((x) => x.id === d.id); if (i >= 0) App.userDrivers[i] = d; else App.userDrivers.push(d); persistDriver(d); nD++; };
+  let nD = 0, nS = 0, skipped = 0, incomplete = 0; const remap = {}; const tally = dbTally();
+  const addDriver = (d) => { const old = d.id; const sid = safeDocId(d.id); d.id = sid && !LIB.some((x) => x.id === sid) ? sid : uid('drv'); if (old && old !== d.id) remap[old] = d.id; delete d.builtin; if (!(d.ts && d.ts.Mms && (d.ts.Cms || d.ts.Kms) && d.ts.Rms != null)) incomplete++; const i = App.userDrivers.findIndex((x) => x.id === d.id); if (i >= 0) App.userDrivers[i] = d; else App.userDrivers.push(d); persistDriver(d); nD++; };
   const isKlirrDriver = (o) => o && typeof o === 'object' && o.ts && (o.label || o.model) && (o.nl || o.sources || o.ts.Mms || o.ts.Cms);
-  if (data && data.klirr) {
-    for (const d of (data.drivers || [])) addDriver(d);
-    for (const s of (data.setups || [])) { if (!s.id || !Array.isArray(s.ways)) { skipped++; continue; } s.id = safeId(s.id) || uid('su'); if (s.order == null) s.order = Date.now() + nS; for (const w of s.ways) if (w && remap[w.driverId]) w.driverId = remap[w.driverId]; const i = App.setups.findIndex((x) => x.id === s.id); if (i >= 0) App.setups[i] = s; else App.setups.push(s); persistSetup(s); nS++; }
-  } else if (Array.isArray(data) && data.every(isKlirrDriver)) data.forEach(addDriver);
-  else if (isKlirrDriver(data)) addDriver(data);
-  else if (data && Array.isArray(data.drivers)) {
-    for (const x of data.drivers) {
-      const ts = completeTS(Object.assign({}, x.ts || {}));
-      const hdMs = (x.measurements || []).filter((m) => m.kind === 'hd-frequency' && Array.isArray(m.series));
-      const meas = hdMs.map((m) => {
-        const spl = m.conditions && +m.conditions.spl_db; const unit = ((m.axes && m.axes.y && (m.axes.y.unit + ' ' + (m.axes.y.label || ''))) || '').toLowerCase();
-        const rel = /re |rel|ratio|dbc/.test(unit);
-        const ser = {}; for (const s of m.series) { const nm = (s.name || '').toUpperCase().match(/H[2-5]/); if (!nm) continue; ser[nm[0]] = s.points.map((p) => [p.x, rel || !isFinite(spl) ? p.y : p.y - spl]); }
-        return { kind: 'hd', level_db: spl, label: 'Driver database HD' + (isFinite(spl) ? ', ' + spl + ' dB' : ''), conditions: (m.method || '') + (m.source ? '; ' + m.source : '') + (m.confidence ? '; confidence ' + m.confidence : ''), source: 's1', series: ser };
-      }).filter((m) => Object.keys(m.series).length);
-      const d = { id: 'db-' + (x.id || uid('d')), brand: x.manufacturer || '', model: x.name || x.id, label: (x.name || x.id), role: x.role || 'driver', ts, nl: {}, sources: [{ sid: 's1', publisher: 'Your driver database', title: x.source || 'drivers.json', url: 'https://enspo-sta.github.io/elementval-drivers/', what: 'Imported small-signal parameters and harmonic distortion measurements.' }], notes: (x.findings || '').slice(0, 600), measurements: meas };
-      addDriver(d);
+  // one file's content; several files chosen at once arrive as a list of them, where an unknown one is skipped
+  const one = (data, top) => {
+    const bad = (msg) => { if (top) throw new Error(msg); skipped++; };
+    if (data && data.klirr) {
+      for (const d of (data.drivers || [])) addDriver(d);
+      for (const s of (data.setups || [])) { if (!s.id || !Array.isArray(s.ways)) { skipped++; continue; } s.id = safeDocId(s.id) || uid('su'); if (s.order == null) s.order = Date.now() + nS; for (const w of s.ways) if (w && remap[w.driverId]) w.driverId = remap[w.driverId]; const i = App.setups.findIndex((x) => x.id === s.id); if (i >= 0) App.setups[i] = s; else App.setups.push(s); persistSetup(s); nS++; }
+    } else if (isDbExport(data)) dbFromExport(data, tally).forEach(addDriver);
+    else if (isDbRecord(data)) addDriver(dbDriver(data, (data.measurements || []).map((set) => ({ set })), tally));
+    else if (Array.isArray(data) && data.every(isKlirrDriver)) data.forEach(addDriver);
+    else if (Array.isArray(data)) data.forEach((x) => one(x, false));
+    else if (isKlirrDriver(data)) addDriver(data);
+    else if (data && Array.isArray(data.drivers) && data.drivers.length && data.drivers.every((x) => typeof x === 'string')) bad('This is the driver database\'s index.json, which lists driver ids only. Import the driver files in database/drivers, or a JSON export from the viewer.');
+    else if (data && typeof data.about === 'string' && Array.isArray(data.drivers)) bad('This is the driver database\'s summary.json, which holds no curves. Import the driver files in database/drivers, or a JSON export from the viewer.');
+    else if (data && Array.isArray(data.drivers)) { // the single drivers.json the database used until 29 September 2026
+      for (const x of data.drivers) {
+        if (!x || typeof x !== 'object' || Array.isArray(x) || !(x.id || x.name)) { skipped++; continue; }
+        addDriver(dbDriver(Object.assign({}, x, { id: String(x.id || x.name), name: String(x.name || x.id) }), (Array.isArray(x.measurements) ? x.measurements : []).map((set) => ({ set })), tally));
+      }
     }
-  } else throw new Error('Unrecognised format. Expected a Klirr export, a Klirr driver, or a database with a "drivers" list.');
-  Store.local('drivers', App.userDrivers); Store.local('setups', App.setups);
-  return 'Imported ' + nD + ' driver(s)' + (nS ? ' and ' + nS + ' setup(s)' : '') + (skipped ? ', skipped ' + skipped : '') + '.' + (incomplete ? ' ' + incomplete + ' of the drivers lack moving mass, compliance or mechanical resistance; fill those in before simulating them.' : '');
+    else bad('Unrecognised format. Expected a Klirr export, a Klirr driver, a driver file or a JSON export from your driver database, or the older drivers.json.');
+  };
+  one(data, true);
+  const kept = Store.local('drivers', App.userDrivers) && Store.local('setups', App.setups);
+  // outside Claude the browser keeps everything in one store of about 5 MB; inside, each driver is saved to the account
+  const full = !kept && Store.mode === 'local' ? 'This browser\'s storage is full, so what you imported lasts only until the page is closed: export it, or import fewer drivers.' : '';
+  return ['Imported ' + nD + ' driver(s)' + (nS ? ' and ' + nS + ' setup(s)' : '') + (skipped ? ', skipped ' + skipped : '') + '.', dbMessage(tally), incomplete ? incomplete + ' of the drivers lack moving mass, compliance or mechanical resistance; fill those in before simulating them.' : '', full].filter(Boolean).join(' ');
+}
+
+// ------------------------------------------------------------------ the driver database (github.com/enspo-sta/elementval-drivers)
+// It keeps every measurement exactly as its source published it, one file per driver: database/drivers/<id>.json with id,
+// name, manufacturer, role, ts (Re Ω, Le mH, Bl T·m, Mms g, Cms mm/N, Rms kg/s, Sd cm², Xmax mm, Fs Hz, Vas L, ...) and
+// measurements, each a set naming its kind (schema/kinds.json). Its viewer's JSON export ("JSON" on a chart, "Export all
+// curves" on a driver page) is { exported, from, measurements: [{ driver: { id, name, manufacturer, ts }, source, set }] },
+// the sets as stored. Until 29 September 2026 the records were one file, { drivers: [...] }. Klirr takes the parameters and
+// the harmonic distortion sets (kind "hd-frequency") and reads them as the viewer does (app/core/compare.js, quantitiesOf):
+// a set marked superseded_by, a set the viewer shows for a driver measured on another (stand_in_from) and a calculated set
+// are left out; levels are the ones the database states at 1 m (HiFiCompass's already are), never corrected for distance.
+const DB_SITE = 'https://elementval-drivers.pages.dev/';
+// the database's source families in its own order (watch/config.json): the first whose pattern matches a set's source names it
+const DB_FAMILIES = [['Manufacturer datasheet', /\bdata ?sheet\b/i], ['HiFiCompass', /hificompass/i], ['Erin\'s Audio Corner', /erin.?s audio corner|\bEAC\b/i], ['audioXpress', /audioxpress|\btest bench\b/i], ['audiohorn', /audiohorn/i], ['diyAudio', /diyaudio/i], ['Parts Express', /parts.?express/i], ['faktiskt.io', /faktiskt/i], ['Stoneeh', /stoneeh/i], ['Maker\'s curves', /maker.?s curves/i], ['Derived (model or calculation)', /\bmodel\b|^from single|\bderived\b|\bcalculat|\bsimulat/i]];
+const DB_TS = ['Re', 'Le', 'L2', 'R2', 'Bl', 'Mms', 'Cms', 'Kms', 'Rms', 'Sd', 'Xmax', 'Pe', 'fs', 'Qms', 'Qes', 'Qts', 'Vas'];
+const DB_DOC_MAX = 250000; // a saved driver is one document in the account store, which holds at most 256 KiB
+const isDbRecord = (o) => !!o && typeof o === 'object' && !Array.isArray(o) && typeof o.id === 'string' && typeof o.name === 'string' && !o.label && !!(o.ts || Array.isArray(o.measurements));
+const isDbExport = (o) => !!o && !Array.isArray(o) && Array.isArray(o.measurements) && o.measurements.length > 0 && o.measurements.every((e) => e && e.driver && typeof e.driver === 'object' && e.set && typeof e.set === 'object');
+const dbTally = () => ({ drivers: 0, updated: 0, sets: 0, superseded: 0, standIn: 0, derived: 0, thdOnly: 0, other: 0, empty: 0, tooBig: 0 });
+function localDay() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function dbFamily(set, given) { if (given) return String(given); const s = String(set.source || ''); const f = DB_FAMILIES.find(([, re]) => re.test(s)); return f ? f[0] : ''; }
+// a curve [[f, y]] sorted by f at frequency f: straight on the log of frequency between measured points, none outside them
+function dbInterp(pts, f) {
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[i], b = pts[i + 1];
+    if (f < a[0] || f > b[0]) continue;
+    if (f === a[0]) return a[1]; if (f === b[0] || a[0] === b[0]) return b[1];
+    return a[1] + (b[1] - a[1]) * Math.log(f / a[0]) / Math.log(b[0] / a[0]);
+  }
+  return null;
+}
+// One stored set as a Klirr overlay { m } (H2 and H3 in dB relative to the fundamental, as Distortion draws), or { skip: why }
+function dbHarmonicSet(set, family) {
+  if (!set || set.kind !== 'hd-frequency') return { skip: 'other' };
+  if (set.superseded_by) return { skip: 'superseded' };
+  if (set.stand_in_from) return { skip: 'standIn' };
+  const fam = dbFamily(set, family);
+  if (/^Derived/i.test(fam)) return { skip: 'derived' };
+  const c = set.conditions || {}, y = (set.axes && set.axes.y) || {};
+  const pct = String(y.unit || '').trim() === '%'; // as charted in percent (Stoneeh's ARTA charts)
+  const spl = /^spl$/i.test(String(y.label || '').trim()); // as sound pressure at the microphone (SoundCheck charts)
+  const pts = (s) => (s.points || []).map((p) => [Number(p && p.x), Number(p && p.y)]).filter((p) => p[0] > 0 && isFinite(p[0]) && isFinite(p[1])).sort((a, b) => a[0] - b[0]);
+  const fund = spl ? (set.series || []).find((s) => /^fundamental$/i.test(String(s.name || '').trim())) : null;
+  const f0 = fund ? pts(fund) : null;
+  const stated = typeof c.spl_db === 'number' ? c.spl_db : typeof c.ref_spl_db === 'number' ? c.ref_spl_db : null;
+  if (spl && !f0 && stated == null) return { skip: 'empty' };
+  const r4 = (v) => Math.round(v * 1e4) / 1e4;
+  const series = {};
+  for (const s of set.series || []) {
+    const n = /^H([23])$/i.exec(String(s.name || '').trim()); if (!n) continue; // Distortion draws the measured H2 and H3
+    const out = [];
+    for (const [x, v] of pts(s)) {
+      if (pct) { if (v > 0) out.push([x, r4(20 * Math.log10(v / 100))]); }
+      else if (f0) { const r = dbInterp(f0, x); if (r != null) out.push([x, r4(v - r)]); }
+      else out.push([x, spl ? r4(v - stated) : v]);
+    }
+    if (out.length) series['H' + n[1]] = out;
+  }
+  if (!Object.keys(series).length) return { skip: (set.series || []).some((s) => /^THD$/i.test(String(s.name || '').trim())) ? 'thdOnly' : 'empty' };
+  const lab = c.lab || fam || 'unknown source';
+  // a stated level that does not fit the drive voltage is compared at the level the voltage gives (the viewer's compareLevelOf)
+  const fromDrive = typeof c.spl_db === 'number' && typeof c.spl_db_from_drive === 'number' ? c.spl_db_from_drive : null;
+  const level = fromDrive != null ? fromDrive : stated;
+  const dB = (v) => String(Math.round(v * 10) / 10) + ' dB';
+  const levelText = level == null ? 'level not stated' : fromDrive != null ? dB(fromDrive) + ' at 1 m from its ' + (c.drive_v != null ? c.drive_v + ' V' : 'drive voltage') + ' (stated as ' + dB(c.spl_db) + ')' : dB(level) + ' at 1 m' + (typeof c.drive_v === 'number' ? ' (' + c.drive_v + ' V)' : '');
+  const near = (typeof c.distance_mm === 'number' && c.distance_mm < 100) || c.field === 'near' ? 'near field' + (typeof c.distance_mm === 'number' ? ' ' + c.distance_mm + ' mm' : ', distance not stated') : null;
+  const label = [lab, levelText, near, c.hpf ? 'high-pass ' + c.hpf : null, c.lpf ? 'low-pass ' + c.lpf : c.lpf_fit ? 'low-pass ' + c.lpf_fit + ' (fitted, not stated)' : null, c.sample > 1 ? 'sample ' + c.sample : null].filter(Boolean).join(', ');
+  const how = pct ? 'charted in percent, shown here in dB' : f0 ? 'charted as sound pressure, taken here relative to the chart\'s own fundamental' : spl ? 'charted as sound pressure, taken here relative to the stated level' : null;
+  const remarks = (Array.isArray(set.source_remarks) ? set.source_remarks : []).map((r) => r && r.text).filter(Boolean).map((t) => 'the source remarks: ' + t);
+  const text = [set.type, set.method, set.source ? 'source: ' + set.source : null, set.confidence ? 'confidence ' + set.confidence : null, how, c.spl_note, c.level_not_stated ? 'level not stated: ' + c.level_not_stated : null, ...remarks].filter(Boolean).join('; ').replace(/[\s.]+$/, ''); // Distortion adds the full stop
+  const image = set.calibration && typeof set.calibration.image === 'string' && /^https?:\/\//i.test(set.calibration.image) ? set.calibration.image : undefined;
+  return { m: { kind: 'hd', level_db: level, label, conditions: text.length > 900 ? text.slice(0, 899) + '…' : text, image, series, lab, dbKey: [set.kind, set.source, set.type, c.spl_db, c.drive_v, c.distance_mm, c.sample].join('|') } };
+}
+// A database record (or the driver of an export with its sets: entries [{ set, family }]) as a Klirr driver. merge: the
+// entries are part of the record (one chart, one source's curves), so they add to an earlier import instead of replacing it.
+function dbDriver(rec, entries, tally, opts = {}) {
+  const id = safeDocId('db-' + rec.id) || uid('db');
+  const prev = App.userDrivers.find((x) => x.id === id);
+  const raw = {};
+  for (const [k, v] of Object.entries(rec.ts || {})) { const key = k === 'Fs' ? 'fs' : k; if (DB_TS.includes(key) && typeof v === 'number' && isFinite(v)) raw[key] = v; }
+  const ts = completeTS(Object.assign({}, raw));
+  const calc = ['Cms', 'Mms', 'Rms', 'Bl'].filter((k) => raw[k] == null && ts[k] != null);
+  const name = String(rec.name || rec.id).replace(/ \*$/, ''), maker = String(rec.manufacturer || ''); // " *": a stand-in's mark in the viewer
+  const day = opts.day || localDay();
+  const http = (u) => typeof u === 'string' && /^https?:\/\//i.test(u.trim());
+  const sources = opts.merge && prev ? clone(prev.sources || []) : [];
+  const src = (s) => { const was = sources.find((x) => x.url === s.url); if (was) { if (s.retrieved) was.retrieved = s.retrieved; return was.sid; } let n = sources.length + 1; while (sources.some((x) => x.sid === 's' + n)) n++; s.sid = 's' + n; sources.push(s); return s.sid; };
+  const home = src({ publisher: 'Your driver database', title: name + ' in the driver database', url: DB_SITE + '#driver/' + encodeURIComponent(rec.id), retrieved: day, what: 'Small-signal parameters and harmonic distortion sets as the database stores them, each measurement exactly as its source published it.' });
+  if (http(rec.source)) src({ publisher: maker || 'Source', title: 'The source the database record names', url: rec.source.trim(), what: 'Where the database record says its data come from.' });
+  if (http(rec.datasheet)) src({ publisher: maker || 'Maker', title: 'Datasheet', url: rec.datasheet.trim(), what: 'The datasheet the database record links.' });
+  const reviews = {};
+  for (const r of Array.isArray(rec.reviews) ? rec.reviews : []) if (r && http(r.url) && !reviews[r.source]) reviews[r.source] = src({ publisher: String(r.source || 'Review'), title: String(r.title || 'Review'), url: r.url.trim(), what: 'A review the database record links.' });
+  const meas = [], keys = new Set();
+  for (const e of entries) {
+    const got = dbHarmonicSet(e.set, e.family);
+    if (got.skip) { tally[got.skip]++; continue; }
+    const m = got.m; if (keys.has(m.dbKey)) continue; keys.add(m.dbKey);
+    m.source = reviews[m.lab] || reviews[dbFamily(e.set, e.family)] || home; delete m.lab;
+    meas.push(m);
+  }
+  const kept = opts.merge && prev ? (prev.measurements || []).filter((m) => m.dbKey && !keys.has(m.dbKey)) : [];
+  const notes = ['Taken from your driver database on ' + day + '.',
+    calc.length ? calc.join(', ') + (calc.length > 1 ? ' were' : ' was') + ' calculated by Klirr from the other published parameters.' : '',
+    rec.ts_note ? 'Parameters: ' + rec.ts_note : '',
+    rec.eol ? 'No longer made' + (rec.eol.checked ? ' (checked ' + rec.eol.checked + ')' : '') + '.' : '',
+    rec.stand_in && rec.stand_in.driver ? 'Until ' + [].concat(rec.stand_in.sources || 'its sources').join(' and ') + ' measures it, the database may show the curves of another driver (' + rec.stand_in.driver + ') for this one; Klirr takes only this driver\'s own sets.' : '',
+    typeof rec.findings === 'string' ? rec.findings : ''].filter(Boolean).join(' ');
+  const d = { id, brand: maker, model: maker && name.startsWith(maker + ' ') ? name.slice(maker.length + 1) : name, label: name, role: rec.role || (prev && prev.role) || 'driver', ts,
+    nl: prev && prev.nl ? prev.nl : {}, // the database has no large-signal curves: ones added in Klirr stay
+    sources, notes: notes.length > 1200 ? notes.slice(0, 1199) + '…' : notes, database: { id: rec.id, taken: day },
+    measurements: kept.concat(meas).sort((a, b) => a.label.localeCompare(b.label, 'en', { numeric: true })) };
+  while (d.measurements.length && JSON.stringify(d).length > DB_DOC_MAX) { d.measurements.pop(); tally.tooBig++; }
+  tally.drivers++; if (prev) tally.updated++; tally.sets += meas.filter((m) => d.measurements.includes(m)).length;
+  return d;
+}
+function dbFromExport(data, tally) {
+  const by = new Map();
+  for (const e of data.measurements) {
+    const id = String(e.driver.id || '');
+    if (!id) { tally.other++; continue; }
+    if (!by.has(id)) by.set(id, { rec: Object.assign({}, e.driver, { id }), entries: [] });
+    by.get(id).entries.push({ set: e.set, family: e.source });
+  }
+  const day = typeof data.exported === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(data.exported) ? data.exported : null;
+  return [...by.values()].map((g) => dbDriver(g.rec, g.entries, tally, { merge: true, day }));
+}
+function dbMessage(t) {
+  if (!t.drivers) return '';
+  const n = (k, one, many) => k + ' ' + (k === 1 ? one : many);
+  const left = [[t.superseded, 'superseded set', 'superseded sets'], [t.standIn, 'set measured on another driver', 'sets measured on another driver'], [t.derived, 'calculated set', 'calculated sets'],
+    [t.thdOnly, 'set with total harmonic distortion only (Distortion overlays H2 and H3)', 'sets with total harmonic distortion only (Distortion overlays H2 and H3)'],
+    [t.empty, 'set without a harmonic curve Klirr can read', 'sets without a harmonic curve Klirr can read'], [t.other, 'set of a kind Klirr does not draw', 'sets of kinds Klirr does not draw'],
+    [t.tooBig, 'set that would make the saved driver larger than 256 KB', 'sets that would make the saved driver larger than 256 KB']].filter((x) => x[0]).map((x) => n(...x));
+  return 'From your driver database: ' + n(t.drivers, 'driver', 'drivers') + (t.updated ? ' (' + t.updated + ' imported before, now updated)' : '') + ' with ' + n(t.sets, 'harmonic distortion set', 'harmonic distortion sets') + ', shown as overlays in Distortion.' + (left.length ? ' Left out: ' + left.join(', ') + '.' : '');
 }

@@ -7,7 +7,7 @@
     "build": "python3 build.py",
     "build:library": "python3 build_library.py",
     "test": "node tests/test_engine.js && node tests/test_api.js && node tests/cmp_erin.js && node tests/cmp_erin2020.js && node tests/reference_test.js",
-    "test:browser": "python3 build.py && node tests/ui_test.js && node tests/editor_test.js && node tests/runtime_test.js && node tests/standalone_test.js",
+    "test:browser": "python3 build.py && node tests/ui_test.js && node tests/editor_test.js && node tests/runtime_test.js && node tests/standalone_test.js && node tests/import_test.js",
     "serve": "python3 -m http.server 8000 --directory dist"
   },
   "devDependencies": {
