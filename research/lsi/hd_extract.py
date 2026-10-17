@@ -2,11 +2,11 @@
 HD plots published by Erin's Audio Corner. Same calibration discipline as lsi_extract.py: OCR tick labels
 under/next to each detected gridline, robust least-squares axis fit, every labelled tick a check tick,
 max residual < 1 px; exact-colour masks; per-column centroid; raw points + calibration metadata + overlay."""
-import json, re, subprocess, sys, os, math
+import json, re, sys, os, math
 import numpy as np
 from PIL import Image, ImageDraw
 sys.path.insert(0, os.path.dirname(__file__))
-from lsi_extract import load, runs, gridlines, fit_axis
+from lsi_extract import load, runs, gridlines, fit_axis, tesseract
 
 COL = {
     'H2': lambda r, g, b: (b > 200) & (r < 60) & (g < 60),
@@ -25,8 +25,8 @@ def ocr_votes(im, box, allowed):
     for scale, thr, psm in ((4, 150, 7), (5, 170, 7), (3, 140, 7), (6, 160, 8), (4, 190, 7)):
         crop = im.crop(box).convert('L')
         crop = crop.resize((crop.width * scale, crop.height * scale), Image.LANCZOS).point(lambda v, t=thr: 0 if v < t else 255)
-        pad = Image.new('L', (crop.width + 60, crop.height + 60), 255); pad.paste(crop, (30, 30)); pad.save('/tmp/_ocr2.png')
-        t = subprocess.run(['tesseract', '/tmp/_ocr2.png', 'stdout', '--psm', str(psm), '-c', 'tessedit_char_whitelist=-0123456789.k'], capture_output=True, text=True).stdout.strip()
+        pad = Image.new('L', (crop.width + 60, crop.height + 60), 255); pad.paste(crop, (30, 30))
+        t = tesseract(pad, '--psm', str(psm), '-c', 'tessedit_char_whitelist=-0123456789.k').strip()
         v = parse_num(t)
         if v is not None and any(abs(v - a) < 1e-9 for a in allowed): votes[v] = votes.get(v, 0) + 1
     return max(votes.items(), key=lambda kv: kv[1])[0] if votes else None

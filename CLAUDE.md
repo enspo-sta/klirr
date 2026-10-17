@@ -37,7 +37,7 @@ top-level functions are shared between them.
 python3 build.py              # build dist/
 npm test                      # engine checks, API smoke test, measured comparisons, independent reference (about 45 s, no browser)
 npm install                   # once, for the browser tests
-npm run test:browser          # build, then four Playwright runs; screenshots land in shots/
+npm run test:browser          # build, then five Playwright runs; screenshots land in shots/
 python3 build_library.py      # regenerate library.json from research/
 npm run serve                 # http://localhost:8000 serves dist/
 ```
@@ -48,9 +48,11 @@ after any change to `src/`. Look at the screenshots in `shots/` after visual cha
 
 In a cloud session the network may block the headless-browser download (`npx playwright install chromium`).
 If so, run `npm test`, push the branch, and read the "Page in a headless browser" job in GitHub Actions,
-which runs the four browser tests on every push and pull request and keeps their screenshots as an artifact.
+which runs the five browser tests on every push and pull request and keeps their screenshots as an artifact.
 Rerunning the extraction needs network access to `erinsaudiocorner.com` and `dl.dropboxusercontent.com`
-and the `tesseract` program.
+and the `tesseract` program (found on PATH, else at its Windows install path, `C:\Program Files\Tesseract-OCR`).
+On Windows `python3` can be the Microsoft Store stub: run the Python commands with `python`, with `PYTHONUTF8=1`
+set, and run by hand the npm scripts that call `python3`.
 
 ## Rules
 
